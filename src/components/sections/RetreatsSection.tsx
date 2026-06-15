@@ -3,75 +3,167 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useRef } from 'react';
-import { motion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  motion,
+  useAnimationControls,
+  useReducedMotion,
+} from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import Container from '../ui/Container';
 import SectionLabel from '../ui/SectionLabel';
 import SectionReveal from '../ui/SectionReveal';
+import RetreatAmbientBackground from '../ui/RetreatAmbientBackground';
+import RetreatDestinationCard from '../ui/RetreatDestinationCard';
+import RetreatTypewriterHeadline from '../ui/RetreatTypewriterHeadline';
+import { RETREAT_LOCATIONS } from '../../data/retreatLocations';
+import { openConnectPanel } from '../../utils/serviceCta';
 
-const LOCATIONS = [
-  { name: 'Jaisalmer', desc: 'Desert silence & golden-hour gong immersions' },
-  { name: 'Rishikesh', desc: 'River-side sound healing & breathwork' },
-  { name: 'Gangtok', desc: 'Mountain retreat & nervous system reset' },
-  { name: 'Sri Lanka', desc: 'Coastal restoration & digital detox' },
-];
+const MARQUEE_DURATION = 55;
 
-export default function RetreatsSection() {
-  const scrollRef = useRef<HTMLDivElement>(null);
+function DesktopMarqueeTrack() {
+  const controls = useAnimationControls();
+  const reducedMotion = useReducedMotion();
+  const [paused, setPaused] = useState(false);
+  const duplicated = [...RETREAT_LOCATIONS, ...RETREAT_LOCATIONS];
 
-  return (
-    <section id="retreats" className="py-20 md:py-[120px] bg-[#f6f3ee] overflow-hidden">
-      <Container>
-        <SectionReveal>
-          <SectionLabel dotColor="#7A8B6F">Retreats</SectionLabel>
-          <h2 className="font-display text-[40px] md:text-[48px] leading-[1.05] tracking-tight text-[#2B2B2B] mb-12">
-            Immersive healing destinations
-          </h2>
-        </SectionReveal>
-      </Container>
+  useEffect(() => {
+    if (reducedMotion) return;
+    if (paused) {
+      controls.stop();
+      return;
+    }
+    controls.start({
+      x: ['0%', '-50%'],
+      transition: {
+        duration: MARQUEE_DURATION,
+        ease: 'linear',
+        repeat: Number.POSITIVE_INFINITY,
+      },
+    });
+  }, [controls, paused, reducedMotion]);
 
-      <div
-        ref={scrollRef}
-        className="flex gap-5 overflow-x-auto pb-4 px-6 md:px-[max(24px,calc((100vw-1200px)/2+40px))] snap-x snap-mandatory scrollbar-hide"
-      >
-        {LOCATIONS.map((loc, i) => (
-          <motion.article
-            key={loc.name}
-            initial={{ opacity: 0, x: 32 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.1, duration: 0.8 }}
-            className="snap-start shrink-0 w-[280px] md:w-[320px] group"
-          >
-            <div className="relative aspect-[4/5] rounded-[24px] overflow-hidden bg-gradient-to-br from-[#D8C5A4] to-[#7A8B6F]/70 shadow-[0_16px_32px_rgba(0,0,0,0.1)] mb-5">
-              <div className="absolute inset-0 bg-[#2B2B2B]/5 group-hover:bg-transparent transition-colors duration-500" />
-              <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-[#2B2B2B]/50 to-transparent">
-                <h3 className="font-display text-[28px] tracking-tight text-white">
-                  {loc.name}
-                </h3>
-              </div>
-            </div>
-            <p className="font-sans text-body-sm tracking-tight text-[#888888] mb-3">
-              {loc.desc}
-            </p>
-            <span className="inline-flex items-center gap-1 font-sans text-caption font-medium tracking-tight text-[#A55A42]">
-              View retreat <ArrowRight className="w-3.5 h-3.5" />
-            </span>
-          </motion.article>
+  if (reducedMotion) {
+    return (
+      <div className="hidden md:flex justify-center gap-6 px-6 overflow-x-auto scrollbar-hide pb-6">
+        {RETREAT_LOCATIONS.map((loc, i) => (
+          <RetreatDestinationCard key={loc.slug} location={loc} index={i} />
         ))}
       </div>
+    );
+  }
 
-      <Container>
-        <SectionReveal delay={0.15}>
-          <div className="mt-10 flex justify-center">
-            <button className="inline-flex items-center gap-2 bg-[#A55A42] text-white font-sans text-body-sm font-medium tracking-tight rounded-[24px] px-[38px] py-3 shadow-[0_4px_8px_rgba(0,0,0,0.1)] hover:bg-[#8e4a35] transition-colors duration-500 cursor-pointer">
-              Reserve Your Spot
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </SectionReveal>
-      </Container>
+  return (
+    <div
+      className="hidden md:block relative retreat-marquee-mask w-full"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <motion.div
+        className="flex items-stretch gap-6 w-max py-2"
+        animate={controls}
+        initial={{ x: '0%' }}
+      >
+        {duplicated.map((loc, i) => (
+          <RetreatDestinationCard
+            key={`${loc.slug}-${i}`}
+            location={loc}
+            index={i % RETREAT_LOCATIONS.length}
+          />
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+function MobileScrollTrack() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showCue, setShowCue] = useState(true);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const hide = () => setShowCue(false);
+    el.addEventListener('scroll', hide, { once: true });
+    el.addEventListener('touchstart', hide, { once: true });
+    return () => {
+      el.removeEventListener('scroll', hide);
+      el.removeEventListener('touchstart', hide);
+    };
+  }, []);
+
+  return (
+    <div className="md:hidden relative w-full">
+      {showCue && (
+        <p className="absolute -top-7 left-1/2 -translate-x-1/2 font-sans text-caption text-[#888888] tracking-tight animate-pulse pointer-events-none">
+          Swipe →
+        </p>
+      )}
+      <div
+        ref={scrollRef}
+        className="flex gap-5 overflow-x-auto pb-6 px-[max(1.5rem,calc((100vw-300px)/2))] snap-x snap-mandatory scrollbar-hide"
+      >
+        {RETREAT_LOCATIONS.map((loc, i) => (
+          <RetreatDestinationCard
+            key={loc.slug}
+            location={loc}
+            index={i}
+            animateIn
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function RetreatsSection() {
+  return (
+    <section id="retreats" className="relative overflow-hidden py-20 md:py-[120px]">
+      <RetreatAmbientBackground />
+
+      <div className="relative z-10 flex flex-col">
+        <Container className="w-full">
+          <SectionReveal>
+            <div className="mb-14 md:mb-16 text-left max-w-xl">
+              <SectionLabel dotColor="#7A8B6F">Retreats</SectionLabel>
+              <RetreatTypewriterHeadline
+                text="Immersive healing destinations"
+                className="text-left mx-0 max-w-none"
+              />
+              <p className="mt-5 font-sans text-body-sm text-[#888888] leading-relaxed">
+                Multi-day immersions in nature — gong ceremonies, sound baths, and deep nervous system
+                restoration in carefully chosen destinations.
+              </p>
+            </div>
+          </SectionReveal>
+        </Container>
+
+        <div className="relative w-full mt-2">
+          <DesktopMarqueeTrack />
+          <MobileScrollTrack />
+        </div>
+
+        <Container className="w-full">
+          <SectionReveal delay={0.15}>
+            <div className="mt-12 flex justify-center">
+              <button
+                type="button"
+                onClick={() =>
+                  openConnectPanel({
+                    service: 'Retreat',
+                    action: 'Reserve Your Spot',
+                    showRetreatPicker: true,
+                  })
+                }
+                className="inline-flex items-center justify-center gap-2 bg-[#A55A42] text-white font-sans text-body-sm font-medium tracking-tight rounded-[24px] px-[38px] py-3 shadow-[0_4px_8px_rgba(0,0,0,0.1)] hover:bg-[#8e4a35] transition-colors duration-500 cursor-pointer"
+              >
+                Reserve Your Spot
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </SectionReveal>
+        </Container>
+      </div>
     </section>
   );
 }

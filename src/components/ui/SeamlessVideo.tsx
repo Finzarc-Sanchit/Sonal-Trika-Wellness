@@ -19,6 +19,7 @@ interface SeamlessVideoProps {
   className?: string;
   style?: CSSProperties;
   parallaxY?: number;
+  onTimeUpdate?: (currentTime: number) => void;
 }
 
 export interface SeamlessVideoHandle {
@@ -26,7 +27,7 @@ export interface SeamlessVideoHandle {
 }
 
 const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
-  function SeamlessVideo({ src, className = '', style, parallaxY = 0 }, ref) {
+  function SeamlessVideo({ src, className = '', style, parallaxY = 0, onTimeUpdate }, ref) {
     const videoARef = useRef<HTMLVideoElement>(null);
     const videoBRef = useRef<HTMLVideoElement>(null);
     const [opacityA, setOpacityA] = useState(1);
@@ -88,10 +89,16 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
       };
 
       const onTimeA = () => {
-        if (activeRef.current === 'a') handleTimeUpdate(a, b, true);
+        if (activeRef.current === 'a') {
+          onTimeUpdate?.(a.currentTime);
+          handleTimeUpdate(a, b, true);
+        }
       };
       const onTimeB = () => {
-        if (activeRef.current === 'b') handleTimeUpdate(b, a, false);
+        if (activeRef.current === 'b') {
+          onTimeUpdate?.(b.currentTime);
+          handleTimeUpdate(b, a, false);
+        }
       };
 
       a.addEventListener('timeupdate', onTimeA);
@@ -101,7 +108,7 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
         a.removeEventListener('timeupdate', onTimeA);
         b.removeEventListener('timeupdate', onTimeB);
       };
-    }, [src]);
+    }, [src, onTimeUpdate]);
 
     const videoClass =
       'absolute inset-0 w-full h-full object-cover transition-opacity duration-100';
@@ -111,18 +118,12 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
         className="absolute inset-0 overflow-hidden"
         style={{ transform: `translate3d(0, ${parallaxY}px, 0)` }}
       >
-        {/* Scale up + reposition to crop Gemini watermark (bottom-right) */}
-        <div
-          className="absolute inset-0"
-          style={{
-            transform: 'scale(1.14)',
-            transformOrigin: '55% 48%',
-          }}
-        >
+        <div className="absolute inset-0">
           <video
             ref={videoARef}
             muted
             playsInline
+            preload="auto"
             className={videoClass}
             style={{ ...style, opacity: opacityA }}
           />
@@ -130,6 +131,7 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
             ref={videoBRef}
             muted
             playsInline
+            preload="auto"
             className={videoClass}
             style={{ ...style, opacity: opacityB }}
           />

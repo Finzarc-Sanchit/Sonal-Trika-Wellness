@@ -3,66 +3,92 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { motion } from 'motion/react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { MessageSquareText, Video } from 'lucide-react';
 import Container from '../ui/Container';
 import SectionLabel from '../ui/SectionLabel';
-import ModernCard from '../ui/ModernCard';
-import SectionReveal from '../ui/SectionReveal';
+import HorizontalTestimonialMarquee from '../ui/HorizontalTestimonialMarquee';
+import VideoTestimonialsGrid from '../ui/VideoTestimonialsGrid';
+import ServiceTypewriterHeadline from '../ui/ServiceTypewriterHeadline';
+import { TESTIMONIALS, VIDEO_TESTIMONIALS } from '../../data/testimonials';
 
-const TESTIMONIALS = [
-  {
-    quote: 'I arrived depleted. I left with a nervous system that finally knew how to rest.',
-    name: 'Priya M.',
-    context: 'Executive, Mumbai',
-  },
-  {
-    quote: 'The gong immersion was unlike anything I have experienced in twelve years of leadership.',
-    name: 'Arjun K.',
-    context: 'Founder & CEO',
-  },
-  {
-    quote: 'Our team returned focused, grounded, and genuinely more connected.',
-    name: 'Sarah L.',
-    context: 'HR Director',
-  },
-];
+type TestimonialMode = 'written' | 'video';
+
+const toggleClass = (active: boolean) =>
+  `inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-sans text-[11px] font-semibold uppercase tracking-[0.15em] transition-all duration-300 cursor-pointer border ${
+    active
+      ? 'bg-[#2B2B2B] text-[#F8F5F0] border-[#2B2B2B]'
+      : 'bg-white/80 text-[#888888] border-[#D8C5A4]/60 hover:border-[#A55A42]/40'
+  }`;
 
 export default function TestimonialsSection() {
-  return (
-    <section className="py-20 md:py-[120px] bg-white">
-      <Container>
-        <SectionReveal>
-          <SectionLabel dotColor="#A55A42">Testimonials</SectionLabel>
-          <h2 className="font-display text-[40px] md:text-[48px] leading-[1.05] tracking-tight text-[#2B2B2B] mb-16">
-            Voices of restoration
-          </h2>
-        </SectionReveal>
+  const [mode, setMode] = useState<TestimonialMode>('written');
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
-          {TESTIMONIALS.map((t, i) => (
-            <div key={t.name}>
-            <SectionReveal delay={i * 0.1}>
-              <motion.div
-                whileHover={{ y: -3, rotate: i === 1 ? 0 : i === 0 ? -0.5 : 0.5 }}
-                transition={{ duration: 0.4 }}
+  return (
+    <section
+      id="testimonials"
+      className="overflow-hidden bg-[#F8F5F0] py-20 md:py-[120px]"
+    >
+      <Container>
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
+          <div className="lg:col-span-4 lg:sticky lg:top-28">
+            <SectionLabel dotColor="#8C82B6">Testimonials</SectionLabel>
+            <ServiceTypewriterHeadline
+              text="Voices of restoration"
+              accentWord="restoration"
+              className="text-left"
+            />
+            <p className="mt-5 max-w-md font-sans text-body-sm leading-relaxed text-[#888888]">
+              Real stories from clients, practitioners, and teams who found their way back to
+              balance through Trika&apos;s sound wellness offerings.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMode('written')}
+                className={toggleClass(mode === 'written')}
               >
-                <ModernCard variant="cream" className="h-full">
-                  <p className="font-display text-lg italic leading-[1.45] tracking-tight text-[#2B2B2B] mb-8">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                  <div className="border-t border-[#e5e5e5] pt-5">
-                    <p className="font-sans text-body-sm font-medium tracking-tight text-[#2B2B2B]">
-                      {t.name}
-                    </p>
-                    <p className="font-sans text-caption tracking-tight text-[#888888] mt-1">
-                      {t.context}
-                    </p>
-                  </div>
-                </ModernCard>
-              </motion.div>
-            </SectionReveal>
+                <MessageSquareText className="h-3.5 w-3.5" />
+                Written Stories
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('video')}
+                className={toggleClass(mode === 'video')}
+              >
+                <Video className="h-3.5 w-3.5" />
+                Video Stories
+              </button>
             </div>
-          ))}
+          </div>
+
+          <div className="min-w-0 lg:col-span-8 lg:flex lg:justify-start">
+            <AnimatePresence mode="wait">
+              {mode === 'written' ? (
+                <motion.div
+                  key="written"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <HorizontalTestimonialMarquee testimonials={TESTIMONIALS} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="video"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <VideoTestimonialsGrid videos={VIDEO_TESTIMONIALS} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </Container>
     </section>

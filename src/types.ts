@@ -3,9 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export interface MenuLinkChild {
+  label: string;
+  url: string;
+}
+
 export interface MenuLink {
   label: string;
   url: string;
+  children?: MenuLinkChild[];
 }
 
 export interface HeroConfig {

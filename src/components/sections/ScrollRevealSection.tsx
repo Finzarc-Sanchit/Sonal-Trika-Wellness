@@ -10,8 +10,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const FULLSCREEN_IMG = '/images/scroll-hero-full.jpg';
-const PILL_HEADPHONES = '/images/scroll-hero-full.jpg';
+const FULLSCREEN_IMG = '/images/sound-healing.png';
+const PILL_HEADPHONES = '/images/sound-healing.png';
 const PILL_MEDITATION = '/images/meditation-pill.jpg';
 
 const ACCENT_WORDS = ['nervous', 'system', 'calm'];
@@ -60,11 +60,75 @@ export default function ScrollRevealSection() {
       gsap.set(accentGlow, { opacity: 0, scaleX: 0 });
       gsap.set(cta, { y: 28, opacity: 0 });
 
+      // Text sequence — plays automatically (time-based, NOT scroll-scrubbed)
+      // the moment the image has minimized. All original animations kept.
+      const textTl = gsap.timeline({ paused: true });
+      textTl
+        .to(finalLayout, {
+          opacity: 1,
+          pointerEvents: 'auto',
+          duration: 0.5,
+          ease: 'power1.inOut',
+        })
+        .to(label, { y: 0, opacity: 1, duration: 0.5, ease: 'power1.out' }, '<0.15')
+        .to(
+          textLines,
+          {
+            y: 0,
+            opacity: 1,
+            filter: 'blur(0px)',
+            stagger: 0.12,
+            duration: 0.7,
+            ease: 'power1.out',
+          },
+          '<0.1'
+        )
+        .to(
+          pills,
+          {
+            scale: 1,
+            opacity: 1,
+            filter: 'blur(0px)',
+            stagger: 0.15,
+            duration: 0.7,
+            ease: 'power1.out',
+          },
+          '<0.2'
+        )
+
+        // Accent line — word-by-word cinematic reveal
+        .to(
+          accentGlow,
+          { opacity: 0.35, scaleX: 1, duration: 0.6, ease: 'power1.inOut' },
+          '<0.1'
+        )
+        .to(
+          accentWords,
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            filter: 'blur(0px)',
+            stagger: 0.18,
+            duration: 0.8,
+            ease: 'power2.out',
+          },
+          '<0.05'
+        )
+
+        // CTA below headline
+        .to(
+          cta,
+          { y: 0, opacity: 1, duration: 0.6, ease: 'power1.out' },
+          '<0.3'
+        );
+
+      // Scroll-scrubbed timeline — controls ONLY the image morph
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=420%',
+          end: '+=260%',
           scrub: 2,
           pin: pin,
           anticipatePin: 1,
@@ -86,91 +150,39 @@ export default function ScrollRevealSection() {
         )
 
         // Phase 2 — gentle hold at full screen
-        .to({}, { duration: 0.22 })
+        .to({}, { duration: 0.18 })
 
-        // Phase 3 — crossfade into editorial layout
+        // Phase 3 — image minimizes away
         .to(morph, {
-          scale: 0.96,
+          scale: 0.38,
+          borderRadius: '48px',
           opacity: 0,
-          duration: 0.28,
-          ease: 'power1.inOut',
+          duration: 0.3,
+          ease: 'power2.inOut',
         })
         .to(
           fullscreen,
-          { opacity: 0, duration: 0.28, ease: 'power1.inOut' },
+          { opacity: 0, duration: 0.3, ease: 'power1.inOut' },
           '<'
         )
         .to(
           grid,
-          { opacity: 1, duration: 0.32, ease: 'power1.inOut' },
-          '<0.08'
-        )
-        .to(
-          finalLayout,
-          { opacity: 1, pointerEvents: 'auto', duration: 0.32, ease: 'power1.inOut' },
-          '<0.12'
-        )
-        .to(
-          label,
-          { y: 0, opacity: 1, duration: 0.22, ease: 'power1.out' },
-          '<0.1'
-        )
-        .to(
-          textLines,
-          {
-            y: 0,
-            opacity: 1,
-            filter: 'blur(0px)',
-            stagger: 0.04,
-            duration: 0.28,
-            ease: 'power1.out',
-          },
-          '<0.06'
-        )
-        .to(
-          pills,
-          {
-            scale: 1,
-            opacity: 1,
-            filter: 'blur(0px)',
-            stagger: 0.06,
-            duration: 0.3,
-            ease: 'power1.out',
-          },
+          { opacity: 1, duration: 0.26, ease: 'power1.inOut' },
           '<0.08'
         )
 
-        // Accent line — word-by-word cinematic reveal
-        .to(
-          accentGlow,
-          { opacity: 0.35, scaleX: 1, duration: 0.25, ease: 'power1.inOut' },
-          '<0.05'
-        )
-        .to(
-          accentWords,
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            filter: 'blur(0px)',
-            stagger: 0.07,
-            duration: 0.32,
-            ease: 'power2.out',
-          },
-          '<0.02'
-        )
+        // The instant the image is gone, the text plays on its own —
+        // no further scrolling required (reverses if scrolled back up)
+        .add(() => {
+          if (tl.scrollTrigger && tl.scrollTrigger.direction === -1) {
+            textTl.reverse();
+          } else {
+            textTl.play();
+          }
+        })
 
-        // CTA below headline
-        .to(
-          cta,
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.28,
-            ease: 'power1.out',
-          },
-          '<0.12'
-        );
+        // Small hold so the pin lasts while the text sequence runs
+        .to({}, { duration: 0.25 });
 
     }, section);
 

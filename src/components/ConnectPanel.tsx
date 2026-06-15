@@ -3,9 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageCircle, X, Send, User, Mail, Phone, FileText } from 'lucide-react';
+import { MessageCircle, X, Send, User, Mail, Phone, FileText, MapPin } from 'lucide-react';
+import {
+  CONNECT_PANEL_EVENT,
+  type ConnectPanelDetail,
+} from '../utils/serviceCta';
+import { RETREAT_LOCATIONS } from '../data/retreatLocations';
 
 interface ConnectPanelProps {
   onSubmit?: (data: ConnectFormData) => void;
@@ -16,17 +21,50 @@ export interface ConnectFormData {
   email: string;
   phone: string;
   details: string;
+  retreatDestination?: string;
 }
+
+const EMPTY_FORM: ConnectFormData = {
+  name: '',
+  email: '',
+  phone: '',
+  details: '',
+  retreatDestination: '',
+};
 
 export default function ConnectPanel({ onSubmit }: ConnectPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState<ConnectFormData>({
-    name: '',
-    email: '',
-    phone: '',
-    details: '',
-  });
+  const [form, setForm] = useState<ConnectFormData>(EMPTY_FORM);
+  const [showRetreatPicker, setShowRetreatPicker] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const { detail } = event as CustomEvent<ConnectPanelDetail>;
+      if (!detail) return;
+
+      const durationLine = detail.duration ? ` (${detail.duration})` : '';
+      const destinationLine = detail.retreatDestination
+        ? ` · Destination: ${detail.retreatDestination}`
+        : '';
+      setShowRetreatPicker(detail.showRetreatPicker ?? false);
+      setForm({
+        ...EMPTY_FORM,
+        details: `I'm interested in: ${detail.service}${durationLine} — ${detail.action}${destinationLine}`,
+        retreatDestination: detail.retreatDestination ?? '',
+      });
+      setIsOpen(true);
+    };
+
+    window.addEventListener(CONNECT_PANEL_EVENT, handler);
+    return () => window.removeEventListener(CONNECT_PANEL_EVENT, handler);
+  }, []);
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setShowRetreatPicker(false);
+    setForm(EMPTY_FORM);
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -34,8 +72,7 @@ export default function ConnectPanel({ onSubmit }: ConnectPanelProps) {
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
-      setIsOpen(false);
-      setForm({ name: '', email: '', phone: '', details: '' });
+      handleClose();
     }, 2200);
   };
 
@@ -47,7 +84,6 @@ export default function ConnectPanel({ onSubmit }: ConnectPanelProps) {
 
   return (
     <>
-      {/* Floating connect trigger — bottom right */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
@@ -72,17 +108,15 @@ export default function ConnectPanel({ onSubmit }: ConnectPanelProps) {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
               className="fixed inset-0 z-50 bg-[#2B2B2B]/40 backdrop-blur-sm"
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
             />
 
-            {/* Panel */}
             <motion.div
               initial={{ opacity: 0, x: 40, scale: 0.95, filter: 'blur(8px)' }}
               animate={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
@@ -91,7 +125,6 @@ export default function ConnectPanel({ onSubmit }: ConnectPanelProps) {
               className="fixed bottom-8 right-8 z-50 w-[calc(100vw-2rem)] sm:w-[400px] max-h-[85vh] overflow-y-auto"
             >
               <div className="relative bg-[#F8F5F0]/95 backdrop-blur-2xl rounded-3xl border border-[#D8C5A4]/50 shadow-2xl shadow-black/15 overflow-hidden">
-                {/* Accent gradient top bar */}
                 <div className="h-1 w-full bg-gradient-to-r from-[#A55A42] via-[#7A8B6F] to-[#5B4A8A]" />
 
                 <div className="p-7">
@@ -115,7 +148,8 @@ export default function ConnectPanel({ onSubmit }: ConnectPanelProps) {
                       </motion.p>
                     </div>
                     <button
-                      onClick={() => setIsOpen(false)}
+                      type="button"
+                      onClick={handleClose}
                       className="w-9 h-9 rounded-full bg-[#2B2B2B]/5 hover:bg-[#2B2B2B]/10 flex items-center justify-center transition-colors cursor-pointer"
                     >
                       <X className="w-4 h-4 text-[#2B2B2B]/60" />
@@ -175,6 +209,45 @@ export default function ConnectPanel({ onSubmit }: ConnectPanelProps) {
                             </div>
                           </motion.div>
                         ))}
+
+                        {showRetreatPicker && (
+                          <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.38 }}
+                          >
+                            <label
+                              className="font-sans text-xs uppercase tracking-wider text-[#7A8B6F] mb-1.5 block"
+                              htmlFor="connect-retreat-select"
+                            >
+                              Select your retreat
+                            </label>
+                            <div className="relative">
+                              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A55A42]/60 pointer-events-none" />
+                              <select
+                                id="connect-retreat-select"
+                                required
+                                value={form.retreatDestination ?? ''}
+                                onChange={(e) =>
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    retreatDestination: e.target.value,
+                                  }))
+                                }
+                                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white/80 border border-[#D8C5A4]/40 font-sans text-sm text-[#2B2B2B] focus:outline-none focus:border-[#A55A42]/50 focus:ring-2 focus:ring-[#A55A42]/10 transition-all cursor-pointer appearance-none"
+                              >
+                                <option value="" disabled>
+                                  Choose a destination
+                                </option>
+                                {RETREAT_LOCATIONS.map((loc) => (
+                                  <option key={loc.slug} value={loc.name}>
+                                    {loc.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </motion.div>
+                        )}
 
                         <motion.div
                           initial={{ opacity: 0, x: 20 }}

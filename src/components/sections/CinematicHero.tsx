@@ -3,23 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useRef, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 
-import SeamlessVideo, { SeamlessVideoHandle } from '../ui/SeamlessVideo';
+import SeamlessVideo from '../ui/SeamlessVideo';
 import GradientButton from '../ui/GradientButton';
-import {
-  useVideoLuminance,
-  luminanceToTextColor,
-  luminanceToShadow,
-} from '../../hooks/useVideoLuminance';
+import TextType from '../ui/TextType';
 
-const HEADLINE_LINES = [
-  'TRUE HEALING',
-  'BEGINS WHEN',
-  'THE BODY FEELS SAFE.',
-];
+const HERO_HEADLINE = 'True healing begins when the mind settles into sound';
+const HERO_SUBTEXT =
+  'The truest healing begins when the external noise fades, and the body feels safe enough to resonate with peace.';
+
+const heroTextStyle = {
+  color: '#FFFFFF',
+  fontWeight: 600,
+  textShadow: '0 2px 24px rgba(0, 0, 0, 0.45)',
+};
 
 interface CinematicHeroProps {
   videoSrc: string;
@@ -36,32 +35,8 @@ export default function CinematicHero({
   onPrimaryCtaClick,
   onSecondaryCtaClick,
 }: CinematicHeroProps) {
-  const videoHandleRef = useRef<SeamlessVideoHandle>(null);
-  const [activeVideoEl, setActiveVideoEl] = useState<HTMLVideoElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  videoRef.current = activeVideoEl;
-
-  const luminance = useVideoLuminance(videoRef);
-  const textColor = luminanceToTextColor(luminance);
-  const textShadow = luminanceToShadow(luminance);
-
-  // Keep ref to whichever seamless video layer is active
-  useEffect(() => {
-    const id = setInterval(() => {
-      const el = videoHandleRef.current?.getActiveVideo() ?? null;
-      setActiveVideoEl((prev) => (prev !== el ? el : prev));
-    }, 200);
-    return () => clearInterval(id);
-  }, []);
-
   const contentOpacity = Math.max(0, 1 - scrollY * 0.002);
   const contentY = scrollY * 0.35;
-
-  const adaptiveStyle = {
-    color: textColor,
-    textShadow,
-    transition: 'color 0.8s ease, text-shadow 0.8s ease',
-  };
 
   const containerVariants = {
     hidden: {},
@@ -85,11 +60,9 @@ export default function CinematicHero({
       id="hero-root-stage"
       className="relative w-full h-screen min-h-[600px] overflow-hidden"
     >
-      <SeamlessVideo
-        ref={videoHandleRef}
-        src={videoSrc}
-        parallaxY={scrollY * 0.15}
-      />
+      <SeamlessVideo src={videoSrc} parallaxY={scrollY * 0.15} />
+
+      <div className="absolute inset-0 z-[1] bg-black/35 pointer-events-none" aria-hidden />
 
       <motion.div
         className="relative z-10 flex h-full items-end md:items-center px-6 md:px-12 xl:px-20 pt-24 pb-20 md:pb-16"
@@ -105,38 +78,33 @@ export default function CinematicHero({
           <motion.p
             variants={fadeUpBlur}
             className="font-sans text-xs md:text-sm uppercase tracking-[0.35em] mb-6 md:mb-8"
-            style={adaptiveStyle}
+            style={heroTextStyle}
           >
-            Trika Yoga &amp; Wellness
+            Trika Wellness
           </motion.p>
 
-          <h1 className="font-display font-light leading-[0.95] tracking-tight mb-8 md:mb-10">
-            {HEADLINE_LINES.map((line, i) => (
-              <span key={line} className="block overflow-hidden">
-                <motion.span
-                  className="inline-block text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-[5.5rem]"
-                  style={adaptiveStyle}
-                  initial={{ opacity: 0, scale: 0.82, y: 30, filter: 'blur(12px)' }}
-                  animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                  transition={{
-                    duration: 1.3,
-                    delay: 0.4 + i * 0.22,
-                    ease,
-                  }}
-                >
-                  {line}
-                </motion.span>
-              </span>
-            ))}
-          </h1>
+          <motion.div variants={fadeUpBlur} className="mb-8 md:mb-10">
+            <TextType
+              as="h1"
+              text={[HERO_HEADLINE]}
+              loop={false}
+              showCursor
+              cursorCharacter="|"
+              typingSpeed={55}
+              initialDelay={600}
+              startOnVisible
+              className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[4.25rem] leading-[1.08] tracking-tight"
+              style={heroTextStyle}
+              cursorClassName="font-light text-white/80"
+            />
+          </motion.div>
 
           <motion.p
             variants={fadeUpBlur}
-            className="font-display text-base md:text-xl max-w-xl leading-relaxed mb-8 md:mb-10 italic"
-            style={adaptiveStyle}
+            className="font-display text-base md:text-xl max-w-xl leading-relaxed mb-8 md:mb-10"
+            style={heroTextStyle}
           >
-            &ldquo;Stillness is not earned through exhaustion — it is allowed,
-            when the body remembers it is safe.&rdquo;
+            {HERO_SUBTEXT}
           </motion.p>
 
           <motion.div
@@ -153,7 +121,7 @@ export default function CinematicHero({
               Begin Your Healing Journey
             </GradientButton>
             <GradientButton variant="secondary" onClick={onSecondaryCtaClick}>
-              Schedule a Discovery Call
+              Our Services
             </GradientButton>
           </motion.div>
         </div>
@@ -167,15 +135,14 @@ export default function CinematicHero({
       >
         <span
           className="font-sans text-[10px] uppercase tracking-[0.3em]"
-          style={adaptiveStyle}
+          style={heroTextStyle}
         >
           Scroll
         </span>
         <div
           className="w-px h-8"
           style={{
-            background: `linear-gradient(to bottom, ${textColor}, transparent)`,
-            transition: 'background 0.8s ease',
+            background: 'linear-gradient(to bottom, #FFFFFF, transparent)',
           }}
         />
       </motion.div>

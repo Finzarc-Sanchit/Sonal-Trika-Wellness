@@ -4,104 +4,267 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, ArrowUpRight } from 'lucide-react';
-import { MenuLink } from '../types';
+import { Menu, X, ArrowUpRight, ChevronDown } from 'lucide-react';
+import { MenuLink, MenuLinkChild } from '../types';
+import TrikaLogo from './ui/TrikaLogo';
 
 interface NavigationBarProps {
-  logoText: string;
+  logoText?: string;
   links: MenuLink[];
   ctaText: string;
   onCtaClick?: () => void;
   onLogoClick?: () => void;
+  variant?: 'overlay' | 'solid';
+  floating?: boolean;
+  homeUrl?: string;
 }
 
+function isInternalRoute(url: string) {
+  return url.startsWith('/') && !url.startsWith('/#');
+}
+
+function NavChildLink({
+  child,
+  className,
+  onClick,
+}: {
+  child: MenuLinkChild;
+  className: string;
+  onClick?: () => void;
+}) {
+  if (isInternalRoute(child.url)) {
+    return (
+      <Link to={child.url} className={className} onClick={onClick}>
+        {child.label}
+      </Link>
+    );
+  }
+
+  return (
+    <a href={child.url} className={className} onClick={onClick}>
+      {child.label}
+    </a>
+  );
+}
+
+function NavAnchor({
+  link,
+  className,
+  onClick,
+  isSolid,
+  showChevron,
+}: {
+  link: MenuLink;
+  className: string;
+  onClick?: () => void;
+  isSolid: boolean;
+  showChevron?: boolean;
+}) {
+  const inner = (
+    <>
+      <span className="relative z-10 inline-flex items-center gap-1">
+        {link.label}
+        {showChevron && (
+          <ChevronDown className="h-3.5 w-3.5 opacity-60 transition-transform duration-300 group-hover:rotate-180" />
+        )}
+      </span>
+      <motion.span
+        layoutId={`nav-dot-${link.label}`}
+        className={`absolute -bottom-0.5 left-1/2 h-1 w-1 rounded-full -translate-x-1/2 ${
+          isSolid ? 'bg-[#8C82B6]' : 'bg-[#F2B5A0]'
+        } opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300`}
+      />
+      <span
+        className={`absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-400 ease-out ${
+          isSolid ? 'bg-[#8C82B6]/60' : 'bg-[#D8C5A4]/80'
+        }`}
+      />
+    </>
+  );
+
+  const cls = `${className} group`;
+
+  if (isInternalRoute(link.url)) {
+    return (
+      <Link to={link.url} className={cls} onClick={onClick}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <a href={link.url} className={cls} onClick={onClick}>
+      {inner}
+    </a>
+  );
+}
+
+function DesktopNavItem({
+  link,
+  linkClass,
+  isSolid,
+}: {
+  link: MenuLink;
+  linkClass: string;
+  isSolid: boolean;
+}) {
+  if (!link.children?.length) {
+    return <NavAnchor link={link} className={linkClass} isSolid={isSolid} />;
+  }
+
+  const childClass =
+    'block rounded-lg px-3 py-2 font-sans text-[13px] text-[#2B2B2B]/75 transition-colors duration-200 hover:bg-[#8C82B6]/8 hover:text-[#8C82B6]';
+
+  return (
+    <div className="group relative">
+      <NavAnchor link={link} className={linkClass} isSolid={isSolid} showChevron />
+      <div className="pointer-events-none absolute left-1/2 top-full z-50 w-[240px] -translate-x-1/2 pt-3 opacity-0 transition-all duration-300 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+        <div className="max-h-[min(420px,70vh)] overflow-y-auto rounded-2xl border border-[#e5e5e5]/80 bg-white/95 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.1)] backdrop-blur-xl">
+          {link.children.map((child, i) => {
+            const isViewAll = child.label === 'View All Services';
+            const isCategory = SERVICE_GROUP_LABELS.has(child.label);
+
+            return (
+              <div key={`${child.label}-${i}`}>
+                {i > 0 && isCategory && (
+                  <div className="my-1 border-t border-[#e5e5e5]/60" />
+                )}
+                <NavChildLink
+                  child={child}
+                  className={`${childClass} ${
+                    isViewAll || isCategory
+                      ? 'font-semibold text-[#2B2B2B]'
+                      : 'pl-5 text-[12px]'
+                  }`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SERVICE_GROUP_LABELS = new Set(['Individual Services', 'Group', 'Teaching']);
+
 export default function NavigationBar({
-  logoText,
   links,
   ctaText,
   onCtaClick,
   onLogoClick,
+  variant = 'overlay',
+  floating = false,
+  homeUrl = '/',
 }: NavigationBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [expandedMobile, setExpandedMobile] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const isSolid = variant === 'solid' || scrolled;
+  const showFloatingPill = floating || scrolled;
+
+  const linkClass = `relative text-sm font-sans font-medium transition-colors duration-300 py-2 ${
+    isSolid
+      ? 'text-[#2B2B2B]/70 hover:text-[#8C82B6]'
+      : 'text-white/90 hover:text-white hero-text-contrast'
+  }`;
+
+  const pillClass = isSolid
+    ? 'bg-white/90 backdrop-blur-xl rounded-[24px] border border-[#e5e5e5]/60 px-6 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+    : 'bg-white/10 backdrop-blur-md rounded-[24px] border border-white/15 px-6 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.12)]';
+
+  const mobileChildClass =
+    'block py-2 pl-4 font-sans text-sm text-[#F8F5F0]/60 hover:text-[#F2B5A0] transition-colors';
 
   return (
     <motion.header
       id="navigation-header"
       animate={{
-        paddingTop: scrolled ? '12px' : '28px',
-        paddingBottom: scrolled ? '12px' : '28px',
+        paddingTop: showFloatingPill ? '16px' : '28px',
+        paddingBottom: showFloatingPill ? '0px' : '28px',
       }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-      className="fixed top-0 left-0 w-full z-40 px-6 md:px-10"
+      className="fixed top-0 left-0 w-full z-40 px-6 md:px-10 pointer-events-none"
     >
       <div
-        className={`max-w-[1200px] mx-auto flex items-center justify-between transition-all duration-500 ${
-          scrolled
-            ? 'mt-3 bg-white/90 backdrop-blur-xl rounded-[24px] border border-[#e5e5e5]/60 px-6 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
-            : ''
-        }`}
+        className={`max-w-[1200px] mx-auto flex items-center justify-between transition-all duration-500 pointer-events-auto ${pillClass}`}
       >
-        <button
-          id="nav-logo"
-          onClick={onLogoClick}
-          className="group cursor-pointer text-left focus:outline-none"
-        >
-          <span
-            className={`font-display text-xl md:text-2xl font-medium tracking-wide transition-colors duration-500 ${
-              scrolled
-                ? 'text-[#2B2B2B] group-hover:text-[#A55A42]'
-                : 'text-white group-hover:text-[#D8C5A4] hero-text-contrast'
-            }`}
+        {onLogoClick ? (
+          <button
+            id="nav-logo"
+            onClick={onLogoClick}
+            className="cursor-pointer focus:outline-none"
           >
-            {logoText}
-          </span>
-        </button>
+            <TrikaLogo homeUrl={homeUrl} variant={isSolid ? 'dark' : 'light'} />
+          </button>
+        ) : (
+          <div id="nav-logo">
+            <TrikaLogo homeUrl={homeUrl} variant={isSolid ? 'dark' : 'light'} />
+          </div>
+        )}
 
         <nav id="desktop-nav" className="hidden md:flex items-center gap-8">
-          {links.map((link, idx) => (
-            <a
-              id={`nav-link-${idx}`}
-              key={link.label}
-              href={link.url}
-              className={`relative text-sm font-sans font-medium transition-colors duration-300 py-2 group ${
-                scrolled
-                  ? 'text-[#2B2B2B]/70 hover:text-[#2B2B2B]'
-                  : 'text-white/90 hover:text-white hero-text-contrast'
-              }`}
-            >
-              {link.label}
-              <span className="absolute bottom-0 left-0 w-full h-px bg-[#D8C5A4] scale-x-0 group-hover:scale-x-100 origin-right group-hover:origin-left transition-transform duration-300 ease-out" />
-            </a>
+          {links.map((link) => (
+            <span key={link.label}>
+              <DesktopNavItem link={link} linkClass={linkClass} isSolid={isSolid} />
+            </span>
           ))}
         </nav>
 
         <div id="nav-cta-area" className="hidden md:block">
-          <button
+          <motion.button
             id="nav-cta-btn"
             onClick={onCtaClick}
-            className="group px-5 py-2.5 rounded-full text-xs font-sans font-semibold uppercase tracking-wider text-white bg-[#A55A42] hover:bg-[#8e4a35] transition-all duration-300 hover:-translate-y-0.5 shadow-lg flex items-center gap-1.5 cursor-pointer"
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className="group relative overflow-hidden px-5 py-2.5 rounded-full text-xs font-sans font-semibold uppercase tracking-wider text-white flex items-center gap-1.5 cursor-pointer shadow-[0_4px_16px_rgba(165,90,66,0.25)]"
           >
-            <span>{ctaText}</span>
-            <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
-          </button>
+            <span className="absolute inset-0 bg-[#A55A42] transition-opacity duration-400 group-hover:opacity-0" />
+            <span className="absolute inset-0 bg-[#8C82B6] opacity-0 transition-opacity duration-400 group-hover:opacity-100" />
+            <span className="relative z-10">{ctaText}</span>
+            <motion.span
+              className="relative z-10"
+              animate={{ x: [0, 2, 0], y: [0, -2, 0] }}
+              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
+            >
+              <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+            </motion.span>
+          </motion.button>
         </div>
 
         <div id="mobile-menu-trigger" className="block md:hidden">
-          <button
+          <motion.button
             id="mobile-menu-toggle"
             onClick={() => setIsOpen(!isOpen)}
-            className="w-10 h-10 rounded-full flex items-center justify-center glass-effect hover:bg-white/10 text-[#F8F5F0] transition-all cursor-pointer"
+            whileTap={{ scale: 0.92 }}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+              isSolid
+                ? 'bg-[#8C82B6]/10 text-[#8C82B6] hover:bg-[#8C82B6]/20'
+                : 'glass-effect hover:bg-white/10 text-[#F8F5F0]'
+            }`}
           >
-            {isOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
+            <AnimatePresence mode="wait">
+              {isOpen ? (
+                <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
+                  <X className="w-4 h-4" />
+                </motion.span>
+              ) : (
+                <motion.span key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
+                  <Menu className="w-4 h-4" />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.button>
         </div>
       </div>
 
@@ -113,19 +276,54 @@ export default function NavigationBar({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute top-full left-0 w-full bg-black/90 backdrop-blur-2xl border-b border-[#F8F5F0]/10 px-6 py-8 md:hidden shadow-2xl flex flex-col gap-6"
+            className="absolute top-full left-0 w-full bg-[#2B2B2B]/95 backdrop-blur-2xl border-b border-[#F8F5F0]/10 px-6 py-8 md:hidden shadow-2xl flex flex-col gap-6 pointer-events-auto mt-3 mx-6 rounded-[24px] max-w-[calc(100%-3rem)]"
           >
             <div className="flex flex-col gap-4">
-              {links.map((link, idx) => (
-                <a
-                  id={`mobile-nav-link-${idx}`}
+              {links.map((link, i) => (
+                <motion.div
                   key={link.label}
-                  href={link.url}
-                  onClick={() => setIsOpen(false)}
-                  className="font-display text-lg font-medium text-[#F8F5F0]/80 hover:text-[#F8F5F0] py-2 border-b border-[#F8F5F0]/10 transition-all"
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.06 }}
                 >
-                  {link.label}
-                </a>
+                  {link.children?.length ? (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedMobile((prev) => (prev === link.label ? null : link.label))
+                        }
+                        className="flex w-full items-center justify-between font-display text-lg font-medium text-[#F8F5F0]/80 hover:text-[#F2B5A0] py-2 border-b border-[#F8F5F0]/10 transition-all"
+                      >
+                        {link.label}
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform duration-300 ${
+                            expandedMobile === link.label ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+                      {expandedMobile === link.label && (
+                        <div className="mt-2 flex flex-col gap-1 border-l border-[#F8F5F0]/15 pl-3">
+                          {link.children.map((child) => (
+                            <NavChildLink
+                              key={`${child.label}-${child.url}`}
+                              child={child}
+                              className={mobileChildClass}
+                              onClick={() => setIsOpen(false)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <NavAnchor
+                      link={link}
+                      onClick={() => setIsOpen(false)}
+                      isSolid={false}
+                      className="font-display text-lg font-medium text-[#F8F5F0]/80 hover:text-[#F2B5A0] py-2 border-b border-[#F8F5F0]/10 transition-all block"
+                    />
+                  )}
+                </motion.div>
               ))}
             </div>
 
@@ -135,7 +333,7 @@ export default function NavigationBar({
                 setIsOpen(false);
                 onCtaClick?.();
               }}
-              className="w-full py-3 rounded-full text-center text-sm font-sans font-semibold uppercase tracking-wider text-[#F8F5F0] bg-[#A55A42] hover:bg-[#8e4a35] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-3 rounded-full text-center text-sm font-sans font-semibold uppercase tracking-wider text-white bg-[#A55A42] hover:bg-[#8C82B6] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>{ctaText}</span>
               <ArrowUpRight className="w-4 h-4" />

@@ -10,10 +10,13 @@
   --color-secondary: #D8C5A4;
   --color-accent: #7A8B6F;
   --color-architect-violet: #5c2999;
+  --color-logo-lavender: #8C82B6;
+  --color-logo-peach: #F2B5A0;
   --color-text: #2B2B2B;
   --color-ash-gray: #888888;
   --color-smoke: #e5e5e5;
   --color-background: #F8F5F0;
+  --background: #F8F5F0;
   --color-warm-cream: #f6f3ee;
   --color-lavender-mist: #f6f1fe;
   --color-mint-whisper: #ebfef6;
@@ -34,6 +37,14 @@ html, body {
   letter-spacing: -0.02em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Keep card interiors stable at any browser zoom */
+.about-card-panel {
+  contain: layout style;
+  min-width: 0;
 }
 
 /* Lithic-inspired type scale — Inter 400/500, tight tracking throughout */
@@ -127,3 +138,297 @@ html, body {
 .section-surface-cream { background-color: #f6f3ee; }
 .section-surface-lavender { background-color: #f6f1fe; }
 .section-surface-mint { background-color: #ebfef6; }
+
+/* Retreat destinations — edge fade on desktop marquee */
+.retreat-marquee-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retreat-marquee-mask {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/* Testimonials — horizontal marquee: solid left, fade right for 2.5-card peek */
+.testimonial-horizontal-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black 82%,
+    transparent 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-horizontal-mask {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/* Testimonials — vertical marquee fade */
+.testimonial-vertical-mask {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+}
+
+/* Services — Liquid Flow gallery */
+.liquid-gallery-container {
+  height: 85vh;
+  min-height: 560px;
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+  background: #1A1A1A;
+}
+
+.liquid-gallery-compact {
+  height: 60vh;
+  min-height: 480px;
+}
+
+.liquid-gallery-item {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: flex 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+  outline: none;
+}
+
+.liquid-gallery-item:hover,
+.liquid-gallery-item:focus-visible {
+  flex: 5.5;
+  z-index: 10;
+}
+
+.liquid-gallery-image-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.liquid-gallery-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.1);
+  transition: transform 8s linear, opacity 1s ease, filter 1s ease;
+  opacity: 0.6;
+  filter: grayscale(80%) sepia(20%);
+}
+
+.liquid-gallery-item:hover .liquid-gallery-image,
+.liquid-gallery-item:focus-visible .liquid-gallery-image {
+  opacity: 1;
+  filter: grayscale(0%) sepia(0%);
+}
+
+.liquid-gallery-mask {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 2rem 2.5rem;
+  z-index: 20;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+  clip-path: polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%);
+}
+
+.liquid-gallery-item:hover .liquid-gallery-mask,
+.liquid-gallery-item:focus-visible .liquid-gallery-mask {
+  opacity: 1;
+  transform: translateY(0);
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+  transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    clip-path 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+}
+
+.liquid-gallery-vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  z-index: 15;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(180deg);
+  color: #F8F5F0;
+  opacity: 0.8;
+  transition: opacity 0.5s ease, transform 0.8s ease;
+  white-space: nowrap;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+.liquid-gallery-cta-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  pointer-events: auto;
+  background: linear-gradient(to top, rgba(26, 26, 26, 0.92) 0%, rgba(26, 26, 26, 0.75) 55%, transparent 100%);
+}
+
+.liquid-gallery-item:hover .liquid-gallery-vertical-title,
+.liquid-gallery-item:focus-visible .liquid-gallery-vertical-title {
+  opacity: 0;
+  transform: translate(-50%, -70%) rotate(180deg);
+}
+
+.liquid-stretch {
+  transition: flex 1.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Mobile — single gallery, horizontal scroll (no duplicate DOM) */
+@media (max-width: 767px) {
+  .liquid-gallery-container {
+    height: 480px;
+    min-height: unset;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    gap: 1rem;
+    padding: 0 1.5rem 1rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .liquid-gallery-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .liquid-gallery-compact {
+    height: 420px;
+  }
+
+  .liquid-gallery-item {
+    flex: 0 0 85vw;
+    max-width: 360px;
+    scroll-snap-align: center;
+    height: 100%;
+  }
+
+  .liquid-gallery-item:hover,
+  .liquid-gallery-item:focus-visible {
+    flex: 0 0 85vw;
+    z-index: 1;
+  }
+
+  .liquid-gallery-mask {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+    padding: 1.5rem;
+  }
+
+  .liquid-gallery-vertical-title {
+    opacity: 0;
+  }
+
+  .liquid-gallery-cta-bar {
+    padding: 1rem 1.25rem 1.25rem;
+  }
+
+  .liquid-gallery-image {
+    opacity: 0.85;
+    filter: grayscale(40%) sepia(10%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-gallery-item,
+  .liquid-gallery-image,
+  .liquid-gallery-mask,
+  .liquid-gallery-vertical-title {
+    transition: none;
+  }
+
+  .liquid-gallery-item:hover,
+  .liquid-gallery-item:focus-visible {
+    flex: 1;
+  }
+
+  @media (max-width: 767px) {
+    .liquid-gallery-item:hover,
+    .liquid-gallery-item:focus-visible {
+      flex: 0 0 85vw;
+    }
+
+    .liquid-gallery-mask {
+      opacity: 1;
+      transform: none;
+      clip-path: none;
+    }
+  }
+}
+
+/* Nervous System section — page scroll snap on section entry only */
+html {
+  scroll-snap-type: y proximity;
+}
+
+.snap-section-start {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  scroll-margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-snap-type: none;
+  }
+
+  .snap-section-start {
+    scroll-snap-stop: normal;
+  }
+}
