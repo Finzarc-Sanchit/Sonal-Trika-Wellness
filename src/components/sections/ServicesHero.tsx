@@ -110,11 +110,11 @@ export default function ServicesHero() {
             delay: 0.55,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mt-8 md:mt-10 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-x-6 sm:gap-y-3"
+          className="mt-8 md:mt-10 flex flex-col items-start sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-x-6 sm:gap-y-3"
         >
           <a
             href="#services-offerings"
-            className="px-8 py-3 bg-[#F8F5F0] text-[#2B2B2B] font-sans text-[11px] font-semibold uppercase tracking-[0.15em] hover:bg-white transition-colors duration-300"
+            className="inline-flex w-full sm:w-auto items-center justify-start px-8 py-3 bg-[#F8F5F0] text-[#2B2B2B] font-sans text-[11px] font-semibold uppercase tracking-[0.15em] hover:bg-white transition-colors duration-300"
           >
             Explore Offerings
           </a>
@@ -123,7 +123,7 @@ export default function ServicesHero() {
             onClick={() =>
               document.getElementById('individual')?.scrollIntoView({ behavior: 'smooth' })
             }
-            className="font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-[#F8F5F0] border-b border-[#F8F5F0] pb-1 hover:text-white hover:border-white transition-all cursor-pointer hero-text-contrast"
+            className="inline-flex items-center justify-start self-start px-8 font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-[#F8F5F0] border-b border-[#F8F5F0] pb-1 hover:text-white hover:border-white transition-all cursor-pointer hero-text-contrast"
           >
             View Individual Services
           </button>

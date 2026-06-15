@@ -71,52 +71,48 @@ export default function ScrollRevealSection() {
       gsap.set(fullscreen, { opacity: 1 });
       gsap.set(finalLayout, { opacity: 0 });
       gsap.set(grid, { opacity: 0 });
-      gsap.set(textLines, { y: 40, opacity: 0 });
-      gsap.set(pills, { scale: 0.94, opacity: 0 });
-      gsap.set(label, { y: 20, opacity: 0 });
-      gsap.set(accentWords, { y: 32, opacity: 0, scale: 0.96 });
-      gsap.set(accentGlow, { opacity: 0, scaleX: 0 });
-      gsap.set(cta, { y: 28, opacity: 0 });
+      gsap.set(textLines, { y: 28, opacity: 0, force3D: true });
+      gsap.set(pills, { scale: 0.96, opacity: 0, force3D: true });
+      gsap.set(label, { y: 16, opacity: 0, force3D: true });
+      gsap.set(accentWords, { y: 24, opacity: 0, scale: 0.98, force3D: true });
+      gsap.set(accentGlow, { opacity: 0, scaleX: 0, force3D: true });
+      gsap.set(cta, { y: 20, opacity: 0, force3D: true });
 
-      // Text sequence — plays automatically (time-based, NOT scroll-scrubbed)
-      // the moment the image has minimized. All original animations kept.
-      const textTl = gsap.timeline({ paused: true });
+      const textTl = gsap.timeline({ paused: true, defaults: { ease: 'sine.out', force3D: true } });
       textTl
         .to(finalLayout, {
           opacity: 1,
           pointerEvents: 'auto',
-          duration: 0.5,
-          ease: 'power1.inOut',
+          duration: 0.75,
+          ease: 'sine.inOut',
         })
-        .to(label, { y: 0, opacity: 1, duration: 0.5, ease: 'power1.out' }, '<0.15')
+        .to(label, { y: 0, opacity: 1, duration: 0.7, ease: 'sine.out' }, '<0.12')
         .to(
           textLines,
           {
             y: 0,
             opacity: 1,
-            stagger: 0.1,
-            duration: 0.55,
-            ease: 'power2.out',
+            stagger: 0.08,
+            duration: 0.72,
+            ease: 'sine.out',
           },
-          '<0.1'
+          '<0.08',
         )
         .to(
           pills,
           {
             scale: 1,
             opacity: 1,
-            stagger: 0.12,
-            duration: 0.55,
-            ease: 'power2.out',
+            stagger: 0.1,
+            duration: 0.72,
+            ease: 'sine.out',
           },
-          '<0.15'
+          '<0.12',
         )
-
-        // Accent line — word-by-word cinematic reveal
         .to(
           accentGlow,
-          { opacity: 0.35, scaleX: 1, duration: 0.6, ease: 'power1.inOut' },
-          '<0.1'
+          { opacity: 0.35, scaleX: 1, duration: 0.8, ease: 'sine.inOut' },
+          '<0.08',
         )
         .to(
           accentWords,
@@ -125,66 +121,56 @@ export default function ScrollRevealSection() {
             opacity: 1,
             scale: 1,
             filter: 'blur(0px)',
-            stagger: 0.18,
-            duration: 0.8,
-            ease: 'power2.out',
+            stagger: 0.14,
+            duration: 0.9,
+            ease: 'sine.out',
           },
-          '<0.05'
+          '<0.04',
         )
+        .to(cta, { y: 0, opacity: 1, duration: 0.75, ease: 'sine.out' }, '<0.24');
 
-        // CTA below headline
-        .to(
-          cta,
-          { y: 0, opacity: 1, duration: 0.6, ease: 'power1.out' },
-          '<0.3'
-        );
-
-      // Scroll-scrubbed timeline — controls ONLY the image morph
       const tl = gsap.timeline({
+        defaults: { ease: 'sine.inOut', force3D: true },
         scrollTrigger: {
           trigger: section,
           start: 'top top',
           end: '+=260%',
-          scrub: 1,
+          scrub: 0.45,
           pin: pin,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          fastScrollEnd: true,
         },
       });
 
-      // Phase 1 — window expands to full screen (butter-smooth scale)
       tl.to(morph, {
         scale: 1,
         borderRadius: '0px',
-        duration: 0.38,
-        ease: 'power1.inOut',
+        duration: 0.42,
+        ease: 'sine.inOut',
       })
         .to(
           image,
-          { scale: 1, duration: 0.38, ease: 'power1.inOut' },
-          0
+          { scale: 1, duration: 0.42, ease: 'sine.inOut' },
+          0,
         )
-
-        // Phase 2 — gentle hold at full screen
-        .to({}, { duration: 0.18 })
-
-        // Phase 3 — image minimizes away
+        .to({}, { duration: 0.14 })
         .to(morph, {
           scale: 0.38,
           borderRadius: '48px',
           opacity: 0,
-          duration: 0.3,
-          ease: 'power2.inOut',
+          duration: 0.36,
+          ease: 'sine.inOut',
         })
         .to(
           fullscreen,
-          { opacity: 0, duration: 0.3, ease: 'power1.inOut' },
-          '<'
+          { opacity: 0, duration: 0.36, ease: 'sine.inOut' },
+          '<',
         )
         .to(
           grid,
-          { opacity: 1, duration: 0.26, ease: 'power1.inOut' },
-          '<0.08'
+          { opacity: 1, duration: 0.32, ease: 'sine.inOut' },
+          '<0.06',
         )
 
         // The instant the image is gone, the text plays on its own —
