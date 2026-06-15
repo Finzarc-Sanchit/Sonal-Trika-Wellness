@@ -16,6 +16,18 @@ interface WatchExperienceButtonProps {
   className?: string;
 }
 
+function prefetchExperienceVideo() {
+  const url = SONIA_FEATURE_VIDEO;
+  const existing = document.querySelector(`link[data-prefetch-video="${url}"]`);
+  if (existing) return;
+  const link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.as = 'video';
+  link.href = url;
+  link.setAttribute('data-prefetch-video', url);
+  document.head.appendChild(link);
+}
+
 export default function WatchExperienceButton({
   variant = 'footer',
   className = '',
@@ -35,6 +47,8 @@ export default function WatchExperienceButton({
         whileHover={{ scale: 1.04, y: -2 }}
         whileTap={{ scale: 0.97 }}
         onClick={() => setOpen(true)}
+        onMouseEnter={prefetchExperienceVideo}
+        onFocus={prefetchExperienceVideo}
         className={`${variant === 'footer' ? footerClasses : pillClasses} ${className}`}
       >
         <Play className="w-4 h-4 fill-current" />

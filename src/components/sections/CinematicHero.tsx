@@ -11,6 +11,10 @@ import SeamlessVideo from '../ui/SeamlessVideo';
 import GradientButton from '../ui/GradientButton';
 import TextType from '../ui/TextType';
 import { onScrollRAF, shouldDisableHeavyMotion } from '../../utils/performance';
+import {
+  onBackgroundMediaPause,
+  onBackgroundMediaResume,
+} from '../../utils/backgroundMedia';
 
 const HERO_HEADLINE = 'True healing begins when the mind settles into sound';
 const HERO_SUBTEXT =
@@ -41,6 +45,20 @@ export default function CinematicHero({
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollHintRef = useRef<HTMLDivElement>(null);
   const videoParallaxRef = useRef<HTMLDivElement>(null);
+  const parallaxPausedRef = useRef(false);
+
+  useEffect(() => {
+    const offPause = onBackgroundMediaPause(() => {
+      parallaxPausedRef.current = true;
+    });
+    const offResume = onBackgroundMediaResume(() => {
+      parallaxPausedRef.current = false;
+    });
+    return () => {
+      offPause();
+      offResume();
+    };
+  }, []);
 
   useEffect(() => {
     if (reducedMotion || shouldDisableHeavyMotion()) return;
@@ -50,6 +68,8 @@ export default function CinematicHero({
     const videoWrap = videoParallaxRef.current;
 
     return onScrollRAF((scrollY) => {
+      if (parallaxPausedRef.current) return;
+
       if (content) {
         const opacity = Math.max(0, 1 - scrollY * 0.002);
         const y = scrollY * 0.35;

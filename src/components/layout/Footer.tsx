@@ -117,31 +117,33 @@ function FooterNewsletter() {
             Monthly notes on sound, stillness, and nervous system care.
           </p>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <label htmlFor="footer-newsletter-email" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="footer-newsletter-email"
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) setError('');
-              }}
-              placeholder="Your email"
-              className="w-full rounded-full border border-[#F8F5F0]/20 bg-transparent px-4 py-2.5 font-sans text-caption tracking-tight text-[#F8F5F0] placeholder:text-[#F8F5F0]/35 focus:border-[#8C82B6]/50 focus:outline-none focus:ring-2 focus:ring-[#8C82B6]/20"
-            />
+            <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
+              <label htmlFor="footer-newsletter-email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="footer-newsletter-email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError('');
+                }}
+                placeholder="Your email"
+                className="w-full min-w-0 rounded-full border border-[#F8F5F0]/20 bg-transparent px-4 py-2.5 font-sans text-caption tracking-tight text-[#F8F5F0] placeholder:text-[#F8F5F0]/35 focus:border-[#8C82B6]/50 focus:outline-none focus:ring-2 focus:ring-[#8C82B6]/20 lg:min-w-0 lg:flex-1"
+              />
+              <motion.button
+                type="submit"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex w-full shrink-0 items-center justify-center rounded-full bg-[#A55A42] px-5 py-2.5 font-sans text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-colors duration-400 hover:bg-[#8e4a35] cursor-pointer border-0 lg:w-auto"
+              >
+                Subscribe
+              </motion.button>
+            </div>
             {error ? (
               <p className="font-sans text-[11px] tracking-tight text-[#F2B5A0]">{error}</p>
             ) : null}
-            <motion.button
-              type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="inline-flex w-full items-center justify-center rounded-full bg-[#A55A42] px-5 py-2.5 font-sans text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-colors duration-400 hover:bg-[#8e4a35] cursor-pointer border-0"
-            >
-              Subscribe
-            </motion.button>
           </form>
         </>
       )}
@@ -199,7 +201,7 @@ export default function Footer() {
       </div>
 
       <Container className="relative z-10 py-14 md:py-16">
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-8">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-x-8 md:gap-y-12 lg:gap-x-12">
           <div className="md:col-span-3">
             <TrikaLogo homeUrl="/" variant="light" className="mb-4" />
             <p className="max-w-xs font-sans text-caption leading-relaxed tracking-tight text-[#F8F5F0]/50">
@@ -221,11 +223,11 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="md:col-span-2">
+          <div className="min-w-0 md:col-span-3 md:col-start-6 lg:col-span-4 lg:col-start-6">
             <FooterNewsletter />
           </div>
 
-          <div className="md:col-span-3">
+          <div className="min-w-0 md:col-span-3 md:col-start-10 lg:col-span-3 lg:col-start-10">
             <h4 className="mb-5 font-sans text-caption font-semibold uppercase tracking-[0.2em] text-[#D8C5A4]">
               {TRIKA_CONTACT.company} · Mumbai
             </h4>

@@ -10,6 +10,11 @@ import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 import { motion } from 'motion/react';
 import SectionLabel from '../ui/SectionLabel';
 import { shouldDisableHeavyMotion } from '../../utils/performance';
+import {
+  registerBackgroundVideo,
+  onBackgroundMediaPause,
+  onBackgroundMediaResume,
+} from '../../utils/backgroundMedia';
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
@@ -36,11 +41,15 @@ function headingShadow(accent: string) {
 function OutcomesVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const visibleRef = useRef(false);
+  const busPausedRef = useRef(false);
 
   useEffect(() => {
     const video = videoRef.current;
     const wrap = wrapRef.current;
     if (!video || !wrap) return;
+
+    const unregister = registerBackgroundVideo(video);
 
     const handleTimeUpdate = () => {
       if (video.currentTime >= CLIP_DURATION) video.currentTime = 0;
@@ -50,7 +59,8 @@ function OutcomesVideo() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        visibleRef.current = entry.isIntersecting;
+        if (entry.isIntersecting && !busPausedRef.current) {
           video.play().catch(() => {});
         } else {
           video.pause();
@@ -60,9 +70,24 @@ function OutcomesVideo() {
     );
     observer.observe(wrap);
 
+    const onBusPause = onBackgroundMediaPause(() => {
+      busPausedRef.current = true;
+      video.pause();
+    });
+
+    const onBusResume = onBackgroundMediaResume(() => {
+      busPausedRef.current = false;
+      if (visibleRef.current) {
+        video.play().catch(() => {});
+      }
+    });
+
     return () => {
+      unregister();
       video.removeEventListener('timeupdate', handleTimeUpdate);
       observer.disconnect();
+      onBusPause();
+      onBusResume();
     };
   }, []);
 

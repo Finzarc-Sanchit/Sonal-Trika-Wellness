@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SUPABASE_VIDEO_BASE } from '../constants/media';
+import { TESTIMONIAL_VIDEOS } from '../constants/media';
 
 export interface Testimonial {
   id: string;
@@ -127,20 +127,20 @@ export const VIDEO_TESTIMONIALS: VideoTestimonial[] = [
     name: 'Client Story',
     designation: 'Sound Wellness Client',
     headline: 'In a world of constant noise, clarity becomes everything',
-    videoSrc: `${SUPABASE_VIDEO_BASE}/Client%201.mp4`,
+    videoSrc: TESTIMONIAL_VIDEOS.clientStory,
   },
   {
     id: 'piyush-sound-bath',
     name: 'Piyush',
     designation: 'Sound Bath Client',
     headline: "That's the beauty of a Sound Bath",
-    videoSrc: `${SUPABASE_VIDEO_BASE}/piyush.mp4`,
+    videoSrc: TESTIMONIAL_VIDEOS.piyush,
   },
   {
     id: 'anju-sound-healing',
     name: 'Anju',
     designation: 'Group Sound Healing Client',
     headline: 'What happens when you finally allow yourself to pause',
-    videoSrc: `${SUPABASE_VIDEO_BASE}/What%20happens%20when%20you%20finally%20allow%20yourself%20to%20pauseAfter%20this%20group%20sound%20healing%20session,%20peo%20(online-video-cutter.com).mp4`,
+    videoSrc: TESTIMONIAL_VIDEOS.anju,
   },
 ];

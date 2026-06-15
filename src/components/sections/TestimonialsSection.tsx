@@ -24,6 +24,7 @@ const toggleClass = (active: boolean) =>
 
 export default function TestimonialsSection() {
   const [mode, setMode] = useState<TestimonialMode>('written');
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   return (
     <section id="testimonials" className="overflow-hidden bg-white py-16 md:py-20">
@@ -74,7 +75,10 @@ export default function TestimonialsSection() {
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   className="-mx-2 md:mx-0"
                 >
-                  <HorizontalTestimonialMarquee testimonials={TESTIMONIALS} />
+                  <HorizontalTestimonialMarquee
+                    testimonials={TESTIMONIALS}
+                    paused={videoModalOpen}
+                  />
                 </motion.div>
               ) : (
                 <motion.div
@@ -83,9 +87,13 @@ export default function TestimonialsSection() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex justify-center"
+                  className="w-full min-w-0"
                 >
-                  <VideoTestimonialsGrid videos={VIDEO_TESTIMONIALS} centered />
+                  <VideoTestimonialsGrid
+                    videos={VIDEO_TESTIMONIALS}
+                    centered
+                    onModalOpenChange={setVideoModalOpen}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

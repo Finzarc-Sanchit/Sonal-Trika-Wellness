@@ -28,6 +28,7 @@ function LiquidGalleryItem({
   onPrimaryCta?: (item: ServiceCard) => void;
   onSecondaryCta?: (item: ServiceCard) => void;
 }) {
+  const itemRef = useRef<HTMLElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const panTimelineRef = useRef<gsap.core.Timeline | null>(null);
   const reducedMotion = useReducedMotion();
@@ -49,6 +50,8 @@ function LiquidGalleryItem({
   };
 
   const handleMouseEnter = useCallback(() => {
+    itemRef.current?.classList.remove('is-nav-target');
+
     if (reducedMotion || !imgRef.current) return;
 
     panTimelineRef.current?.kill();
@@ -83,6 +86,7 @@ function LiquidGalleryItem({
 
   return (
     <article
+      ref={itemRef}
       id={item.id}
       className="liquid-gallery-item group scroll-mt-24"
       onMouseEnter={handleMouseEnter}

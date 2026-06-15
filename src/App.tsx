@@ -10,36 +10,7 @@ import AboutPage from './pages/AboutPage';
 import ServicesPage from './pages/ServicesPage';
 import ContactPage from './pages/ContactPage';
 
-function scrollToHashTarget(id: string, attempt = 0) {
-  const el = document.getElementById(id);
-  if (!el) {
-    if (attempt < 4) {
-      window.setTimeout(() => scrollToHashTarget(id, attempt + 1), 200);
-    }
-    return;
-  }
-
-  const gallery = el.closest('.liquid-gallery-container') as HTMLElement | null;
-
-  if (gallery) {
-    const groupSection = gallery.closest('[id]') as HTMLElement | null;
-    if (groupSection) {
-      groupSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    window.setTimeout(() => {
-      const cardLeft = el.offsetLeft;
-      const cardWidth = el.offsetWidth;
-      gallery.scrollTo({
-        left: cardLeft - (gallery.clientWidth - cardWidth) / 2,
-        behavior: 'smooth',
-      });
-    }, 280);
-    return;
-  }
-
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+import { scrollToHashTarget } from './utils/scrollToHash';
 
 function ScrollToTopOnNavigate() {
   const { pathname, hash } = useLocation();
@@ -68,7 +39,7 @@ function ScrollToHash() {
     const id = hash.replace('#', '');
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
     const delay =
-      pathname === '/services' ? (isMobile ? 500 : 400) : 120;
+      pathname === '/services' ? (isMobile ? 500 : 500) : 120;
     const timer = window.setTimeout(() => scrollToHashTarget(id), delay);
 
     return () => window.clearTimeout(timer);

@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, ArrowUpRight, ChevronDown } from 'lucide-react';
 import { MenuLink, MenuLinkChild } from '../types';
 import TrikaLogo from './ui/TrikaLogo';
 import { onScrollThreshold } from '../utils/performance';
+import { parseInternalUrl, scrollToHashTarget } from '../utils/scrollToHash';
 
 interface NavigationBarProps {
   logoText?: string;
@@ -35,9 +36,37 @@ function NavChildLink({
   className: string;
   onClick?: () => void;
 }) {
-  if (isInternalPath(child.url)) {
+  const location = useLocation();
+  const parsed = parseInternalUrl(child.url);
+
+  const handleClick = useCallback(() => {
+    onClick?.();
+
+    if (!parsed?.hash) return;
+
+    const id = parsed.hash.replace('#', '');
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    const delay =
+      parsed.pathname === '/services' && location.pathname === '/services'
+        ? isMobile
+          ? 300
+          : 400
+        : parsed.pathname === '/services'
+          ? isMobile
+            ? 500
+            : 500
+          : 120;
+
+    window.setTimeout(() => scrollToHashTarget(id), delay);
+  }, [onClick, parsed, location.pathname]);
+
+  if (parsed) {
     return (
-      <Link to={child.url} className={className} onClick={onClick}>
+      <Link
+        to={{ pathname: parsed.pathname, hash: parsed.hash || undefined }}
+        className={className}
+        onClick={handleClick}
+      >
         {child.label}
       </Link>
     );
@@ -88,8 +117,13 @@ function NavAnchor({
   const cls = `${className} group`;
 
   if (isInternalPath(link.url)) {
+    const parsed = parseInternalUrl(link.url);
+    const to = parsed
+      ? { pathname: parsed.pathname, hash: parsed.hash || undefined }
+      : link.url;
+
     return (
-      <Link to={link.url} className={cls} onClick={onClick}>
+      <Link to={to} className={cls} onClick={onClick}>
         {inner}
       </Link>
     );
@@ -121,7 +155,7 @@ function DesktopNavItem({
   return (
     <div className="group relative">
       <NavAnchor link={link} className={linkClass} isSolid={isSolid} showChevron />
-      <div className="pointer-events-none absolute left-1/2 top-full z-50 w-[240px] -translate-x-1/2 pt-3 opacity-0 transition-all duration-300 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+      <div className="pointer-events-none absolute left-1/2 top-full z-50 w-[240px] -translate-x-1/2 opacity-0 transition-all duration-300 before:absolute before:inset-x-0 before:-top-3 before:h-3 before:content-[''] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
         <div className="max-h-[min(420px,70vh)] overflow-y-auto rounded-2xl border border-[#e5e5e5]/80 bg-white/95 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.1)] backdrop-blur-xl">
           {link.children.map((child, i) => {
             const isCategory = SERVICE_GROUP_LABELS.has(child.label);

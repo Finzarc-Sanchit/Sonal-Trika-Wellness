@@ -6,6 +6,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import type { Testimonial } from '../../data/testimonials';
+import {
+  onBackgroundMediaPause,
+  onBackgroundMediaResume,
+} from '../../utils/backgroundMedia';
 
 export const TESTIMONIAL_CARD_WIDTH = 360;
 export const TESTIMONIAL_CARD_GAP = 24;
@@ -18,6 +22,8 @@ const RESUME_AUTO_MS = 2000;
 interface HorizontalTestimonialMarqueeProps {
   testimonials: Testimonial[];
   duration?: number;
+  /** Stops auto-scroll RAF (e.g. when a video modal is open). */
+  paused?: boolean;
 }
 
 function TestimonialCard({ item }: { item: Testimonial }) {
@@ -50,6 +56,7 @@ function TestimonialCard({ item }: { item: Testimonial }) {
 export default function HorizontalTestimonialMarquee({
   testimonials,
   duration = 80,
+  paused = false,
 }: HorizontalTestimonialMarqueeProps) {
   const reducedMotion = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -58,7 +65,17 @@ export default function HorizontalTestimonialMarquee({
   const lastTickRef = useRef<number>(0);
   const [manual, setManual] = useState(false);
   const [hoverPaused, setHoverPaused] = useState(false);
+  const [busPaused, setBusPaused] = useState(false);
   const loop = [...testimonials, ...testimonials];
+
+  useEffect(() => {
+    const offPause = onBackgroundMediaPause(() => setBusPaused(true));
+    const offResume = onBackgroundMediaResume(() => setBusPaused(false));
+    return () => {
+      offPause();
+      offResume();
+    };
+  }, []);
 
   const clearResumeTimer = useCallback(() => {
     if (resumeTimerRef.current !== null) {
@@ -88,7 +105,7 @@ export default function HorizontalTestimonialMarquee({
     };
   }, [clearResumeTimer]);
 
-  const autoActive = !manual && !hoverPaused;
+  const autoActive = !manual && !hoverPaused && !paused && !busPaused;
 
   useEffect(() => {
     if (reducedMotion || !autoActive) {

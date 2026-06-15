@@ -3,41 +3,126 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import type { VideoTestimonial } from '../../data/testimonials';
+import {
+  pauseAllBackgroundMedia,
+  resumeAllBackgroundMedia,
+} from '../../utils/backgroundMedia';
+import {
+  logVideoLoadTime,
+  useRenderCount,
+  watchDroppedFrames,
+} from '../../utils/videoPerfDebug';
+
+interface VideoTestimonialPlayerProps {
+  video: VideoTestimonial;
+}
+
+const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
+  video,
+}: VideoTestimonialPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const loadStartRef = useRef(performance.now());
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(false);
+
+  useRenderCount('VideoTestimonialPlayer');
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    loadStartRef.current = performance.now();
+    setReady(false);
+    setError(false);
+
+    const startPlayback = () => {
+      logVideoLoadTime(video.id, loadStartRef.current, 'canplay');
+      setReady(true);
+      void el.play().catch(() => {});
+      watchDroppedFrames(el, video.id);
+    };
+
+    const onError = () => setError(true);
+
+    el.addEventListener('canplay', startPlayback, { once: true });
+    el.addEventListener('error', onError);
+
+    el.preload = 'auto';
+    el.src = video.videoSrc;
+    el.load();
+
+    return () => {
+      el.removeEventListener('canplay', startPlayback);
+      el.removeEventListener('error', onError);
+      el.pause();
+      el.removeAttribute('src');
+      el.load();
+    };
+  }, [video.id, video.videoSrc]);
+
+  return (
+    <div
+      className="relative mx-auto w-full max-w-[min(400px,88vw)] max-h-[72vh] aspect-[9/16] bg-black flex items-center justify-center"
+    >
+      {!ready && !error && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <Loader2 className="w-8 h-8 text-[#D8C5A4] animate-spin" aria-hidden />
+          <span className="sr-only">Loading video</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 px-6 text-center">
+          <p className="font-sans text-sm text-[#F8F5F0]/80">
+            Unable to load this video. Please try again later.
+          </p>
+        </div>
+      )}
+
+      <video
+        ref={videoRef}
+        poster={video.posterSrc}
+        controls
+        playsInline
+        className={`video-player-contain w-full h-full bg-black transition-opacity duration-300 ${
+          ready ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+    </div>
+  );
+});
 
 interface VideoTestimonialModalProps {
   video: VideoTestimonial | null;
   onClose: () => void;
 }
 
-export default function VideoTestimonialModal({
-  video,
-  onClose,
-}: VideoTestimonialModalProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+function VideoTestimonialModal({ video, onClose }: VideoTestimonialModalProps) {
+  useRenderCount('VideoTestimonialModal');
 
   useEffect(() => {
     if (!video) return;
+
+    pauseAllBackgroundMedia();
+    logVideoLoadTime(video.id, performance.now(), 'modal-open');
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKey);
+
     return () => {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', onKey);
+      resumeAllBackgroundMedia();
     };
   }, [video, onClose]);
-
-  useEffect(() => {
-    if (video && videoRef.current) {
-      videoRef.current.play().catch(() => {});
-    }
-  }, [video]);
 
   if (typeof document === 'undefined') return null;
 
@@ -51,58 +136,56 @@ export default function VideoTestimonialModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             aria-label="Close video"
-            className="fixed inset-0 z-[9998] bg-[#1A1A1A]/85 backdrop-blur-md cursor-pointer border-0 p-0"
+            className="fixed inset-0 z-[9998] bg-[#1A1A1A]/92 cursor-pointer border-0 p-0"
             onClick={onClose}
           />
 
-          <motion.div
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
             role="dialog"
             aria-modal="true"
             aria-label={`Video testimonial from ${video.name}`}
-            initial={{ opacity: 0, scale: 0.94, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 16 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-4 top-[8vh] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 z-[9999] w-auto md:w-[min(420px,calc(100vw-2rem))] max-h-[90vh] overflow-y-auto"
           >
-            <div className="relative rounded-2xl overflow-hidden bg-[#1A1A1A] shadow-2xl border border-[#F8F5F0]/10">
-              <button
-                type="button"
-                onClick={onClose}
-                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-[#1A1A1A]/70 hover:bg-[#1A1A1A] flex items-center justify-center transition-colors cursor-pointer border border-white/20"
-              >
-                <X className="w-4 h-4 text-white" />
-              </button>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="pointer-events-auto w-full max-w-[min(400px,92vw)]"
+            >
+              <div className="relative rounded-2xl overflow-hidden bg-[#1A1A1A] shadow-2xl border border-[#F8F5F0]/10">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-[#1A1A1A]/70 hover:bg-[#1A1A1A] flex items-center justify-center transition-colors cursor-pointer border border-white/20"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
 
-              <video
-                ref={videoRef}
-                src={video.videoSrc}
-                poster={video.posterSrc}
-                controls
-                playsInline
-                preload="metadata"
-                className="block w-full max-h-[70vh] object-contain bg-black mx-auto"
-              />
+                <VideoTestimonialPlayer key={video.id} video={video} />
 
-              <div className="p-6 md:p-8 bg-[#F8F5F0]">
-                <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#888888] mb-2">
-                  Video Testimonial
-                </p>
-                <h3 className="font-display text-2xl tracking-tight text-[#2B2B2B] mb-1">
-                  {video.name}
-                </h3>
-                <p className="font-sans text-caption text-[#888888] mb-3">
-                  {video.designation}
-                </p>
-                <p className="font-display text-lg italic text-[#2B2B2B]/85 leading-relaxed">
-                  {video.headline}
-                </p>
+                <div className="p-6 md:p-8 bg-[#F8F5F0]">
+                  <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#888888] mb-2">
+                    Video Testimonial
+                  </p>
+                  <h3 className="font-display text-2xl tracking-tight text-[#2B2B2B] mb-1">
+                    {video.name}
+                  </h3>
+                  <p className="font-sans text-caption text-[#888888] mb-3">
+                    {video.designation}
+                  </p>
+                  <p className="font-display text-lg italic text-[#2B2B2B]/85 leading-relaxed">
+                    {video.headline}
+                  </p>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>,
     document.body,
   );
 }
+
+export default memo(VideoTestimonialModal);

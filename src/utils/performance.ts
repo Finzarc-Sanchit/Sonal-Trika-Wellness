@@ -11,6 +11,14 @@ export function isMobileViewport(): boolean {
   return window.matchMedia('(max-width: 767px)').matches;
 }
 
+export function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
 export function shouldDisableHeavyMotion(): boolean {
   return prefersReducedMotion() || isMobileViewport();
 }

@@ -11,6 +11,11 @@ import {
   useImperativeHandle,
   type CSSProperties,
 } from 'react';
+import {
+  registerBackgroundVideo,
+  onBackgroundMediaPause,
+  onBackgroundMediaResume,
+} from '../../utils/backgroundMedia';
 
 const CROSSFADE_SEC = 1.0;
 
@@ -36,6 +41,7 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
     const activeRef = useRef<'a' | 'b'>('a');
     const crossfadingRef = useRef(false);
     const visibleRef = useRef(true);
+    const busPausedRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
       getActiveVideo: () =>
@@ -55,7 +61,9 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
 
           if (entry.isIntersecting) {
             const active = activeRef.current === 'a' ? a : b;
-            active.play().catch(() => {});
+            if (!busPausedRef.current) {
+              active.play().catch(() => {});
+            }
           } else {
             a.pause();
             b.pause();
@@ -73,12 +81,45 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
       const b = videoBRef.current;
       if (!a || !b) return;
 
+      const unregisterA = registerBackgroundVideo(a);
+      const unregisterB = registerBackgroundVideo(b);
+
+      const pauseBoth = () => {
+        busPausedRef.current = true;
+        a.pause();
+        b.pause();
+      };
+
+      const resumeActive = () => {
+        busPausedRef.current = false;
+        if (visibleRef.current) {
+          const active = activeRef.current === 'a' ? a : b;
+          active.play().catch(() => {});
+        }
+      };
+
+      const offPause = onBackgroundMediaPause(pauseBoth);
+      const offResume = onBackgroundMediaResume(resumeActive);
+
+      return () => {
+        unregisterA();
+        unregisterB();
+        offPause();
+        offResume();
+      };
+    }, []);
+
+    useEffect(() => {
+      const a = videoARef.current;
+      const b = videoBRef.current;
+      if (!a || !b) return;
+
       a.src = src;
       b.src = src;
       a.load();
       b.load();
 
-      if (visibleRef.current) {
+      if (visibleRef.current && !busPausedRef.current) {
         a.play().catch(() => {});
       }
 
@@ -89,7 +130,7 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
         if (timeLeft <= CROSSFADE_SEC) {
           crossfadingRef.current = true;
           other.currentTime = 0;
-          if (visibleRef.current) {
+          if (visibleRef.current && !busPausedRef.current) {
             other.play().catch(() => {});
           }
 
