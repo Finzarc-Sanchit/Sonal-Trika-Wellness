@@ -142,7 +142,6 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         imageAlt: 'Corporate team in guided sound wellness meditation session',
         primaryCta: 'Request Corporate Proposal',
         secondaryCta: 'Learn More',
-        secondaryHref: '/services#group',
       },
       {
         id: 'retreats-festivals',
