@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { shouldDisableHeavyMotion } from '../../utils/performance';
+import { prefersReducedMotion, isMobileViewport } from '../../utils/performance';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -26,6 +26,17 @@ export default function ScrollRevealSection() {
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const finalRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  const [staticMode, setStaticMode] = useState(() =>
+    typeof window !== 'undefined' && prefersReducedMotion(),
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setStaticMode(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   useLayoutEffect(() => {
     const section = sectionRef.current;
@@ -45,7 +56,7 @@ export default function ScrollRevealSection() {
     const accentGlow = finalLayout.querySelector('.accent-glow');
     const cta = finalLayout.querySelector('.reveal-cta');
 
-    if (shouldDisableHeavyMotion()) {
+    if (staticMode) {
       gsap.set(morph, { opacity: 0, scale: 0.38, visibility: 'hidden' });
       gsap.set(image, { scale: 1 });
       gsap.set(fullscreen, { opacity: 0 });
@@ -60,6 +71,9 @@ export default function ScrollRevealSection() {
       });
       return;
     }
+
+    const scrollEnd = isMobileViewport() ? '+=120%' : '+=260%';
+    const endHold = isMobileViewport() ? 0.05 : 0.25;
 
     const ctx = gsap.context(() => {
       gsap.set(morph, {
@@ -134,7 +148,7 @@ export default function ScrollRevealSection() {
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=260%',
+          end: scrollEnd,
           scrub: 0.45,
           pin: pin,
           anticipatePin: 1,
@@ -184,7 +198,7 @@ export default function ScrollRevealSection() {
         })
 
         // Small hold so the pin lasts while the text sequence runs
-        .to({}, { duration: 0.25 });
+        .to({}, { duration: endHold });
 
     }, section);
 
@@ -195,7 +209,7 @@ export default function ScrollRevealSection() {
       window.removeEventListener('resize', onResize);
       ctx.revert();
     };
-  }, []);
+  }, [staticMode]);
 
   return (
     <section
@@ -204,7 +218,14 @@ export default function ScrollRevealSection() {
       className="relative bg-[#f9f7f4]"
       aria-label="Wellness journey reveal"
     >
-      <div ref={pinRef} className="relative h-screen w-full overflow-hidden">
+      <div
+        ref={pinRef}
+        className={
+          staticMode
+            ? 'relative flex w-full flex-col items-center overflow-hidden py-8'
+            : 'relative h-[76svh] w-full overflow-hidden md:h-screen'
+        }
+      >
         <div
           ref={gridRef}
           className="absolute inset-0 pointer-events-none opacity-0"
@@ -219,7 +240,6 @@ export default function ScrollRevealSection() {
           }}
         />
 
-        {/* Morphing fullscreen container */}
         <div className="absolute inset-0 flex items-center justify-center z-20">
           <div
             ref={morphRef}
@@ -236,22 +256,25 @@ export default function ScrollRevealSection() {
           </div>
         </div>
 
-        {/* Final editorial layout */}
         <div
           ref={finalRef}
-          className="absolute inset-0 z-30 flex flex-col items-center justify-center px-6 md:px-12 opacity-0 pointer-events-none"
+          className={
+            staticMode
+              ? 'relative z-30 flex w-full flex-col items-center px-5 py-0 opacity-100 pointer-events-auto'
+              : 'absolute inset-0 z-30 flex flex-col items-center justify-center px-5 py-6 opacity-0 pointer-events-none md:px-12 md:py-0'
+          }
         >
-          <p className="reveal-label font-sans text-caption font-medium tracking-[0.2em] text-[#888888] uppercase mb-10 md:mb-14">
+          <p className="reveal-label font-sans text-caption font-medium tracking-[0.2em] text-[#888888] uppercase mb-3 text-center md:mb-14">
             Trika Wellness
           </p>
 
           <div className="w-full max-w-[900px] text-center">
-            <div className="reveal-line font-sans font-medium text-[clamp(2.5rem,7vw,5.5rem)] leading-[1.05] tracking-tight text-[#2B2B2B] mb-1 md:mb-2">
+            <div className="reveal-line font-sans font-medium text-[clamp(2rem,6.5vw,5.5rem)] leading-[1.05] tracking-tight text-[#2B2B2B] mb-1 md:mb-2">
               Restore your
             </div>
 
             <div className="reveal-line flex flex-wrap items-center justify-center gap-3 md:gap-5 mb-1 md:mb-2">
-              <span className="font-sans font-medium text-[clamp(2.5rem,7vw,5.5rem)] leading-[1.05] tracking-tight text-[#2B2B2B]">
+              <span className="font-sans font-medium text-[clamp(2rem,6.5vw,5.5rem)] leading-[1.05] tracking-tight text-[#2B2B2B]">
                 own journey
               </span>
               <div className="reveal-pill w-[clamp(140px,22vw,280px)] h-[clamp(48px,8vw,88px)] rounded-full overflow-hidden shrink-0 shadow-md">
@@ -271,7 +294,7 @@ export default function ScrollRevealSection() {
                   className="w-full h-full object-cover object-[center_20%]"
                 />
               </div>
-              <span className="font-sans font-medium text-[clamp(2.5rem,7vw,5.5rem)] leading-[1.05] tracking-tight text-[#2B2B2B] order-1 md:order-2">
+              <span className="font-sans font-medium text-[clamp(2rem,6.5vw,5.5rem)] leading-[1.05] tracking-tight text-[#2B2B2B] order-1 md:order-2">
                 to deeper
               </span>
             </div>
@@ -285,7 +308,7 @@ export default function ScrollRevealSection() {
               {ACCENT_WORDS.map((word) => (
                 <span
                   key={word}
-                  className="accent-word inline-block font-sans font-medium text-[clamp(2.5rem,7vw,5.5rem)] leading-[1.05] tracking-tight text-[#A55A42]"
+                  className="accent-word inline-block font-sans font-medium text-[clamp(2rem,6.5vw,5.5rem)] leading-[1.05] tracking-tight text-[#A55A42]"
                 >
                   {word}
                 </span>
@@ -295,7 +318,7 @@ export default function ScrollRevealSection() {
             {/* CTA below headline */}
             <Link
               to="/contact"
-              className="reveal-cta inline-flex items-center gap-2 mt-10 md:mt-14 font-sans text-body-sm md:text-subheading font-medium tracking-tight text-[#2B2B2B] border-b border-[#A55A42]/40 pb-1 hover:text-[#A55A42] hover:border-[#A55A42] transition-colors duration-500 pointer-events-auto"
+              className="reveal-cta inline-flex items-center gap-2 mt-5 md:mt-14 font-sans text-body-sm md:text-subheading font-medium tracking-tight text-[#2B2B2B] border-b border-[#A55A42]/40 pb-1 hover:text-[#A55A42] hover:border-[#A55A42] transition-colors duration-500 pointer-events-auto"
             >
               Join for the mental Wellness Journey
               <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
