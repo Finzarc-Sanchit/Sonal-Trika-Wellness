@@ -6,7 +6,6 @@
 import {
   useEffect,
   useRef,
-  useState,
   forwardRef,
   useImperativeHandle,
   type CSSProperties,
@@ -16,8 +15,6 @@ import {
   onBackgroundMediaPause,
   onBackgroundMediaResume,
 } from '../../utils/backgroundMedia';
-
-const CROSSFADE_SEC = 1.0;
 
 interface SeamlessVideoProps {
   src: string;
@@ -34,20 +31,15 @@ export interface SeamlessVideoHandle {
 const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
   function SeamlessVideo({ src, className = '', style, parallaxY = 0, onTimeUpdate }, ref) {
     const rootRef = useRef<HTMLDivElement>(null);
-    const videoARef = useRef<HTMLVideoElement>(null);
-    const videoBRef = useRef<HTMLVideoElement>(null);
-    const [opacityA, setOpacityA] = useState(1);
-    const [opacityB, setOpacityB] = useState(0);
-    const activeRef = useRef<'a' | 'b'>('a');
-    const crossfadingRef = useRef(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
     const visibleRef = useRef(true);
     const busPausedRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
-      getActiveVideo: () =>
-        activeRef.current === 'a' ? videoARef.current : videoBRef.current,
+      getActiveVideo: () => videoRef.current,
     }));
 
+    // Intersection Observer Control (Saves CPU when out of view)
     useEffect(() => {
       const root = rootRef.current;
       if (!root) return;
@@ -55,18 +47,15 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
       const observer = new IntersectionObserver(
         ([entry]) => {
           visibleRef.current = entry.isIntersecting;
-          const a = videoARef.current;
-          const b = videoBRef.current;
-          if (!a || !b) return;
+          const video = videoRef.current;
+          if (!video) return;
 
           if (entry.isIntersecting) {
-            const active = activeRef.current === 'a' ? a : b;
             if (!busPausedRef.current) {
-              active.play().catch(() => { });
+              video.play().catch(() => { });
             }
           } else {
-            a.pause();
-            b.pause();
+            video.pause();
           }
         },
         { threshold: 0.15 },
@@ -76,133 +65,68 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
       return () => observer.disconnect();
     }, []);
 
+    // Global Media Event Bus Subscriptions
     useEffect(() => {
-      const a = videoARef.current;
-      const b = videoBRef.current;
-      if (!a || !b) return;
+      const video = videoRef.current;
+      if (!video) return;
 
-      const unregisterA = registerBackgroundVideo(a);
-      const unregisterB = registerBackgroundVideo(b);
+      const unregister = registerBackgroundVideo(video);
 
-      const pauseBoth = () => {
+      const handlePause = () => {
         busPausedRef.current = true;
-        a.pause();
-        b.pause();
+        video.pause();
       };
 
-      const resumeActive = () => {
+      const handleResume = () => {
         busPausedRef.current = false;
         if (visibleRef.current) {
-          const active = activeRef.current === 'a' ? a : b;
-          active.play().catch(() => { });
+          video.play().catch(() => { });
         }
       };
 
-      const offPause = onBackgroundMediaPause(pauseBoth);
-      const offResume = onBackgroundMediaResume(resumeActive);
+      const offPause = onBackgroundMediaPause(handlePause);
+      const offResume = onBackgroundMediaResume(handleResume);
 
       return () => {
-        unregisterA();
-        unregisterB();
+        unregister();
         offPause();
         offResume();
       };
     }, []);
 
+    // Autoplay & Source Binding Sync Hook
     useEffect(() => {
-      const a = videoARef.current;
-      const b = videoBRef.current;
-      if (!a || !b) return;
+      const video = videoRef.current;
+      if (!video) return;
 
-      // Ensure autoplay prerequisites are enforced at runtime
-      a.muted = true;
-      b.muted = true;
-      a.defaultMuted = true;
-      b.defaultMuted = true;
-      a.playsInline = true;
-      b.playsInline = true;
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
 
-      // Kick off decode+play immediately (hero is above the fold)
-      a.load();
-      b.load();
-      if (!busPausedRef.current) {
-        a.play().catch(() => { });
+      // Forces browser to run infinite seamless hardware-accelerated loops
+      video.loop = true;
+
+      video.load();
+
+      if (visibleRef.current && !busPausedRef.current) {
+        video.play().catch(() => { });
       }
     }, [src]);
 
+    // Optional user time tracking reporting bridge
     useEffect(() => {
-      const a = videoARef.current;
-      const b = videoBRef.current;
-      if (!a || !b) return;
+      const video = videoRef.current;
+      if (!video || !onTimeUpdate) return;
 
-      a.load();
-      b.load();
-
-      if (visibleRef.current && !busPausedRef.current) {
-        a.play().catch(() => { });
-      }
-
-      const handleTimeUpdate = (current: HTMLVideoElement, other: HTMLVideoElement, isA: boolean) => {
-        if (!current.duration || crossfadingRef.current) return;
-
-        const timeLeft = current.duration - current.currentTime;
-        if (timeLeft <= CROSSFADE_SEC) {
-          crossfadingRef.current = true;
-          other.currentTime = 0;
-          if (visibleRef.current && !busPausedRef.current) {
-            other.play().catch(() => { });
-          }
-
-          const start = performance.now();
-          const duration = CROSSFADE_SEC * 1000;
-
-          const tick = (now: number) => {
-            const progress = Math.min(1, (now - start) / duration);
-            if (isA) {
-              setOpacityA(1 - progress);
-              setOpacityB(progress);
-            } else {
-              setOpacityB(1 - progress);
-              setOpacityA(progress);
-            }
-
-            if (progress < 1) {
-              requestAnimationFrame(tick);
-            } else {
-              current.pause();
-              current.currentTime = 0;
-              activeRef.current = isA ? 'b' : 'a';
-              crossfadingRef.current = false;
-            }
-          };
-          requestAnimationFrame(tick);
-        }
+      const handleTimeUpdate = () => {
+        onTimeUpdate(video.currentTime);
       };
 
-      const onTimeA = () => {
-        if (activeRef.current === 'a') {
-          onTimeUpdate?.(a.currentTime);
-          handleTimeUpdate(a, b, true);
-        }
-      };
-      const onTimeB = () => {
-        if (activeRef.current === 'b') {
-          onTimeUpdate?.(b.currentTime);
-          handleTimeUpdate(b, a, false);
-        }
-      };
-
-      a.addEventListener('timeupdate', onTimeA);
-      b.addEventListener('timeupdate', onTimeB);
-
+      video.addEventListener('timeupdate', handleTimeUpdate);
       return () => {
-        a.removeEventListener('timeupdate', onTimeA);
-        b.removeEventListener('timeupdate', onTimeB);
+        video.removeEventListener('timeupdate', handleTimeUpdate);
       };
     }, [onTimeUpdate]);
-
-    const videoClass =
-      'absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-100';
 
     const parallaxTransform =
       parallaxY !== 0 ? `translate3d(0, ${parallaxY}px, 0)` : undefined;
@@ -213,40 +137,18 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
         className={`absolute inset-0 overflow-hidden ${className}`}
         style={{ transform: parallaxTransform }}
       >
-        <div className="absolute inset-0">
-          <video
-            ref={videoARef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            poster="/videos/hero-poster.jpg"
-            className={videoClass}
-            style={{ ...style, opacity: opacityA }}
-          >
-            <source
-              src="/videos/hero.mp4"
-              type="video/mp4"
-            />
-          </video>
-          <video
-            ref={videoBRef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            poster="/videos/hero-poster.jpg"
-            className={videoClass}
-            style={{ ...style, opacity: opacityB }}
-          >
-            <source
-              src="/videos/hero.mp4"
-              type="video/mp4"
-            />
-          </video>
-        </div>
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          style={style}
+        >
+          <source src={src} type="video/mp4" />
+        </video>
       </div>
     );
   },
