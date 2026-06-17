@@ -62,7 +62,7 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
           if (entry.isIntersecting) {
             const active = activeRef.current === 'a' ? a : b;
             if (!busPausedRef.current) {
-              active.play().catch(() => {});
+              active.play().catch(() => { });
             }
           } else {
             a.pause();
@@ -94,7 +94,7 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
         busPausedRef.current = false;
         if (visibleRef.current) {
           const active = activeRef.current === 'a' ? a : b;
-          active.play().catch(() => {});
+          active.play().catch(() => { });
         }
       };
 
@@ -114,11 +114,32 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
       const b = videoBRef.current;
       if (!a || !b) return;
 
+      // Ensure autoplay prerequisites are enforced at runtime
+      a.muted = true;
+      b.muted = true;
+      a.defaultMuted = true;
+      b.defaultMuted = true;
+      a.playsInline = true;
+      b.playsInline = true;
+
+      // Kick off decode+play immediately (hero is above the fold)
+      a.load();
+      b.load();
+      if (!busPausedRef.current) {
+        a.play().catch(() => { });
+      }
+    }, [src]);
+
+    useEffect(() => {
+      const a = videoARef.current;
+      const b = videoBRef.current;
+      if (!a || !b) return;
+
       a.load();
       b.load();
 
       if (visibleRef.current && !busPausedRef.current) {
-        a.play().catch(() => {});
+        a.play().catch(() => { });
       }
 
       const handleTimeUpdate = (current: HTMLVideoElement, other: HTMLVideoElement, isA: boolean) => {
@@ -129,7 +150,7 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
           crossfadingRef.current = true;
           other.currentTime = 0;
           if (visibleRef.current && !busPausedRef.current) {
-            other.play().catch(() => {});
+            other.play().catch(() => { });
           }
 
           const start = performance.now();
@@ -181,7 +202,7 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
     }, [onTimeUpdate]);
 
     const videoClass =
-      'absolute inset-0 w-full h-full object-cover cursor-pointer transition-opacity duration-100';
+      'absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-100';
 
     const parallaxTransform =
       parallaxY !== 0 ? `translate3d(0, ${parallaxY}px, 0)` : undefined;
@@ -196,30 +217,34 @@ const SeamlessVideo = forwardRef<SeamlessVideoHandle, SeamlessVideoProps>(
           <video
             ref={videoARef}
             autoPlay
-            muted
             loop
+            muted
             playsInline
             preload="auto"
             poster="/videos/hero-poster.jpg"
             className={videoClass}
             style={{ ...style, opacity: opacityA }}
           >
-            <source src="/videos/hero-bg.webm" type="video/webm" />
-            <source src="/videos/hero-bg.mp4" type="video/mp4" />
+            <source
+              src="/videos/hero.mp4"
+              type="video/mp4"
+            />
           </video>
           <video
             ref={videoBRef}
             autoPlay
-            muted
             loop
+            muted
             playsInline
             preload="auto"
             poster="/videos/hero-poster.jpg"
             className={videoClass}
             style={{ ...style, opacity: opacityB }}
           >
-            <source src="/videos/hero-bg.webm" type="video/webm" />
-            <source src="/videos/hero-bg.mp4" type="video/mp4" />
+            <source
+              src="/videos/hero.mp4"
+              type="video/mp4"
+            />
           </video>
         </div>
       </div>
