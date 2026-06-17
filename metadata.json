@@ -1,6 +1,0 @@
-{
-  "name": "Premium Hero Framework",
-  "description": "A premium, luxury, and cinematic React hero section featuring custom video backgrounds, custom JavaScript fade systems, parallax scrolling, and glassmorphic designs.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
