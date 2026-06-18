@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useReducedMotion } from 'motion/react';
@@ -44,6 +44,30 @@ export default function ServicesSection({
   const parallaxBgRef = useRef<HTMLDivElement>(null);
   const groupRefs = useRef<(HTMLDivElement | null)[]>([]);
   const reducedMotion = useReducedMotion();
+
+  const resolveSecondaryCta = useCallback(
+    (item: ServiceCard) => {
+      if (item.secondaryHref) {
+        onSecondaryCta?.(item);
+        return;
+      }
+      if (
+        item.learnMore &&
+        item.secondaryCta &&
+        LEARN_MORE_CTAS.includes(item.secondaryCta) &&
+        onLearnMore
+      ) {
+        onLearnMore(item);
+        return;
+      }
+      if (onSecondaryCta) {
+        onSecondaryCta(item);
+        return;
+      }
+      handleServiceSecondaryCta(item, onLearnMore);
+    },
+    [onSecondaryCta, onLearnMore],
+  );
 
   useEffect(() => {
     if (reducedMotion || !sectionRef.current || shouldDisableHeavyMotion()) return;
@@ -137,7 +161,7 @@ export default function ServicesSection({
             className={groupIdx > 0 ? 'relative z-10 mt-16 md:mt-[120px] scroll-mt-24' : 'relative z-10 scroll-mt-24'}
           >
             <Container className="mb-8 md:mb-12">
-              <div className="services-group-header flex min-w-0 flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div className="services-group-header grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,280px)] lg:grid-cols-[minmax(0,1fr)_320px] gap-4 md:gap-8 lg:gap-10 md:items-start">
                 <div className="min-w-0">
                   <SectionLabel dotColor={group.accentColor}>{group.label}</SectionLabel>
                   {headline && (
@@ -148,7 +172,7 @@ export default function ServicesSection({
                   )}
                 </div>
                 {group.subtext && (
-                  <p className="font-sans text-body-sm text-[#888888] max-w-sm leading-relaxed italic md:mb-1 min-w-0 text-balance">
+                  <p className="font-sans text-body-sm text-[#888888] max-w-none md:max-w-[320px] leading-relaxed md:pt-7 min-w-0 line-clamp-3">
                     {group.subtext}
                   </p>
                 )}
@@ -159,26 +183,7 @@ export default function ServicesSection({
               items={group.items}
               compact={group.compact}
               onPrimaryCta={onPrimaryCta}
-              onSecondaryCta={(item) => {
-                if (item.secondaryHref) {
-                  onSecondaryCta?.(item);
-                  return;
-                }
-                if (
-                  item.learnMore &&
-                  item.secondaryCta &&
-                  LEARN_MORE_CTAS.includes(item.secondaryCta) &&
-                  onLearnMore
-                ) {
-                  onLearnMore(item);
-                  return;
-                }
-                if (onSecondaryCta) {
-                  onSecondaryCta(item);
-                  return;
-                }
-                handleServiceSecondaryCta(item, onLearnMore);
-              }}
+              onSecondaryCta={resolveSecondaryCta}
             />
           </div>
         );

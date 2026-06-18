@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -17,6 +18,22 @@
   --color-smoke: #e5e5e5;
   --color-background: #F8F5F0;
   --background: #F8F5F0;
+  --color-foreground: #2B2B2B;
+  --foreground: #2B2B2B;
+  --color-popover: #ffffff;
+  --popover: #ffffff;
+  --color-popover-foreground: #2B2B2B;
+  --popover-foreground: #2B2B2B;
+  --color-muted: #f6f3ee;
+  --muted: #f6f3ee;
+  --color-muted-foreground: #888888;
+  --muted-foreground: #888888;
+  --color-accent: #D8C5A4;
+  --accent: #D8C5A4;
+  --color-accent-foreground: #2B2B2B;
+  --accent-foreground: #2B2B2B;
+  --color-border: #e5e5e5;
+  --border: #e5e5e5;
   --color-warm-cream: #f6f3ee;
   --color-lavender-mist: #f6f1fe;
   --color-mint-whisper: #ebfef6;
@@ -226,34 +243,65 @@ html, body {
   flex: 1;
   position: relative;
   overflow: hidden;
-  cursor: pointer;
+  cursor: default;
+  isolation: isolate;
   transition: flex 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1;
   outline: none;
 }
 
-.liquid-gallery-item:hover,
+@media (hover: hover) {
+  .liquid-gallery-item:hover,
+  .liquid-gallery-item.is-nav-target {
+    flex: 5.5;
+    z-index: 10;
+  }
+
+  .liquid-gallery-item:hover .liquid-gallery-image,
+  .liquid-gallery-item.is-nav-target .liquid-gallery-image {
+    opacity: 1;
+    filter: grayscale(0%) sepia(0%);
+  }
+
+  .liquid-gallery-item:hover .liquid-gallery-mask,
+  .liquid-gallery-item.is-nav-target .liquid-gallery-mask {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+    transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+      clip-path 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+  }
+
+  .liquid-gallery-item:hover .liquid-gallery-vertical-title,
+  .liquid-gallery-item.is-nav-target .liquid-gallery-vertical-title {
+    opacity: 0;
+    transform: translate(-50%, -70%) rotate(180deg);
+  }
+}
+
 .liquid-gallery-item:focus-visible,
 .liquid-gallery-item.is-nav-target {
   flex: 5.5;
   z-index: 10;
 }
 
-.liquid-gallery-item:hover .liquid-gallery-image,
 .liquid-gallery-item:focus-visible .liquid-gallery-image,
 .liquid-gallery-item.is-nav-target .liquid-gallery-image {
   opacity: 1;
   filter: grayscale(0%) sepia(0%);
 }
 
-.liquid-gallery-item:hover .liquid-gallery-mask,
 .liquid-gallery-item:focus-visible .liquid-gallery-mask,
 .liquid-gallery-item.is-nav-target .liquid-gallery-mask {
   opacity: 1;
   transform: translateY(0);
   clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
-  transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-    clip-path 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+}
+
+.liquid-gallery-item:focus-visible .liquid-gallery-vertical-title,
+.liquid-gallery-item.is-nav-target .liquid-gallery-vertical-title {
+  opacity: 0;
+  transform: translate(-50%, -70%) rotate(180deg);
 }
 
 .liquid-gallery-image-wrapper {
@@ -322,13 +370,6 @@ html, body {
   padding: 1.25rem 1.5rem 1.5rem;
   pointer-events: auto;
   background: linear-gradient(to top, rgba(26, 26, 26, 0.92) 0%, rgba(26, 26, 26, 0.75) 55%, transparent 100%);
-}
-
-.liquid-gallery-item:hover .liquid-gallery-vertical-title,
-.liquid-gallery-item:focus-visible .liquid-gallery-vertical-title,
-.liquid-gallery-item.is-nav-target .liquid-gallery-vertical-title {
-  opacity: 0;
-  transform: translate(-50%, -70%) rotate(180deg);
 }
 
 .liquid-stretch {

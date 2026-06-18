@@ -3,15 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, ArrowUpRight, ChevronDown } from 'lucide-react';
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+} from '@/components/ui/navigation-menu';
+import ServicesMegaMenu from './navigation/ServicesMegaMenu';
 import { MenuLink, MenuLinkChild } from '../types';
 import TrikaLogo from './ui/TrikaLogo';
 import ContactBookingModal from './contact/ContactBookingModal';
 import { onScrollThreshold } from '../utils/performance';
 import { parseInternalUrl, scrollToHashTarget } from '../utils/scrollToHash';
+import { NavLinkLabel } from './navigation/NavLinkParts';
+import { getDesktopNavLinkClass } from '../utils/navLinkStyles';
+import { BOOKING_MODAL_EVENT } from '../utils/bookingModal';
 
 interface NavigationBarProps {
   logoText?: string;
@@ -84,38 +94,12 @@ function NavAnchor({
   link,
   className,
   onClick,
-  isSolid,
-  showChevron,
 }: {
   link: MenuLink;
   className: string;
   onClick?: () => void;
-  isSolid: boolean;
-  showChevron?: boolean;
 }) {
-  const inner = (
-    <>
-      <span className="relative z-10 inline-flex items-center gap-1">
-        {link.label}
-        {showChevron && (
-          <ChevronDown className="h-3.5 w-3.5 opacity-60 transition-transform duration-300 group-hover:rotate-180" />
-        )}
-      </span>
-      <motion.span
-        layoutId={`nav-dot-${link.label}`}
-        className={`absolute -bottom-0.5 left-1/2 h-1 w-1 rounded-full -translate-x-1/2 ${
-          isSolid ? 'bg-[#8C82B6]' : 'bg-[#F2B5A0]'
-        } opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300`}
-      />
-      <span
-        className={`absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-400 ease-out ${
-          isSolid ? 'bg-[#8C82B6]/60' : 'bg-[#D8C5A4]/80'
-        }`}
-      />
-    </>
-  );
-
-  const cls = `${className} group`;
+  const cls = `${className} group relative transition-colors duration-200`;
 
   if (isInternalPath(link.url)) {
     const parsed = parseInternalUrl(link.url);
@@ -125,65 +109,70 @@ function NavAnchor({
 
     return (
       <Link to={to} className={cls} onClick={onClick}>
-        {inner}
+        <span>{link.label}</span>
+        <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#D8C5A4] transition-all duration-300 group-hover:w-full" />
       </Link>
     );
   }
 
   return (
     <a href={link.url} className={cls} onClick={onClick}>
-      {inner}
+      <span>{link.label}</span>
+      <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#D8C5A4] transition-all duration-300 group-hover:w-full" />
     </a>
+  );
+}
+
+function DesktopNavMenuLink({
+  link,
+  isSolid,
+}: {
+  link: MenuLink;
+  isSolid: boolean;
+}) {
+  const cls = getDesktopNavLinkClass(isSolid);
+
+  if (isInternalPath(link.url)) {
+    const parsed = parseInternalUrl(link.url);
+    const to = parsed
+      ? { pathname: parsed.pathname, hash: parsed.hash || undefined }
+      : link.url;
+
+    return (
+      <NavigationMenuLink asChild>
+        <Link to={to} className={cls}>
+          <NavLinkLabel label={link.label} />
+        </Link>
+      </NavigationMenuLink>
+    );
+  }
+
+  return (
+    <NavigationMenuLink asChild>
+      <a href={link.url} className={cls}>
+        <NavLinkLabel label={link.label} />
+      </a>
+    </NavigationMenuLink>
   );
 }
 
 function DesktopNavItem({
   link,
-  linkClass,
   isSolid,
 }: {
   link: MenuLink;
-  linkClass: string;
   isSolid: boolean;
 }) {
-  if (!link.children?.length) {
-    return <NavAnchor link={link} className={linkClass} isSolid={isSolid} />;
+  if (link.label === 'Services') {
+    return <ServicesMegaMenu isSolid={isSolid} />;
   }
 
-  const childClass =
-    'block rounded-lg px-3 py-2 font-sans text-[13px] text-[#2B2B2B]/75 transition-colors duration-200 hover:bg-[#8C82B6]/8 hover:text-[#8C82B6]';
-
   return (
-    <div className="group relative">
-      <NavAnchor link={link} className={linkClass} isSolid={isSolid} showChevron />
-      <div className="pointer-events-none absolute left-1/2 top-full z-50 w-[240px] -translate-x-1/2 opacity-0 transition-all duration-300 before:absolute before:inset-x-0 before:-top-3 before:h-3 before:content-[''] group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-        <div className="max-h-[min(420px,70vh)] overflow-y-auto rounded-2xl border border-[#e5e5e5]/80 bg-white/95 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.1)] backdrop-blur-xl">
-          {link.children.map((child, i) => {
-            const isCategory = SERVICE_GROUP_LABELS.has(child.label);
-
-            return (
-              <div key={`${child.label}-${i}`}>
-                {i > 0 && isCategory && (
-                  <div className="my-1 border-t border-[#e5e5e5]/60" />
-                )}
-                <NavChildLink
-                  child={child}
-                  className={`${childClass} ${
-                    isCategory
-                      ? 'font-semibold text-[#2B2B2B]'
-                      : 'pl-5 text-[12px]'
-                  }`}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    <NavigationMenuItem>
+      <DesktopNavMenuLink link={link} isSolid={isSolid} />
+    </NavigationMenuItem>
   );
 }
-
-const SERVICE_GROUP_LABELS = new Set(['Individual Services', 'Group', 'Teaching']);
 
 export default function NavigationBar({
   links,
@@ -202,21 +191,28 @@ export default function NavigationBar({
     return onScrollThreshold(20, setScrolled);
   }, []);
 
+  useEffect(() => {
+    const openBooking = () => {
+      setIsOpen(false);
+      setBookingOpen(true);
+    };
+
+    window.addEventListener(BOOKING_MODAL_EVENT, openBooking);
+    return () => window.removeEventListener(BOOKING_MODAL_EVENT, openBooking);
+  }, []);
+
   const isSolid = variant === 'solid' || scrolled;
   const showFloatingPill = floating || scrolled;
-
-  const linkClass = `relative text-sm font-sans font-medium transition-colors duration-300 py-2 ${
-    isSolid
-      ? 'text-[#2B2B2B]/70 hover:text-[#8C82B6]'
-      : 'text-white/90 hover:text-white hero-text-contrast'
-  }`;
 
   const pillClass = isSolid
     ? 'bg-white/90 backdrop-blur-xl rounded-[24px] border border-[#e5e5e5]/60 px-6 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
     : 'bg-white/10 backdrop-blur-md rounded-[24px] border border-white/15 px-6 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.12)]';
 
+  const mobileLinkClass =
+    'font-display text-lg font-medium text-[#F8F5F0]/80 hover:text-[#D8C5A4] py-2 border-b border-[#F8F5F0]/10 transition-colors duration-200 block';
+
   const mobileChildClass =
-    'block py-2 pl-4 font-sans text-sm text-[#F8F5F0]/60 hover:text-[#F2B5A0] transition-colors';
+    'block py-2 pl-4 font-sans text-sm text-[#F8F5F0]/60 hover:text-[#D8C5A4] transition-colors duration-200';
 
   const handleBookSession = () => {
     setIsOpen(false);
@@ -235,7 +231,7 @@ export default function NavigationBar({
       className="fixed top-0 left-0 w-full z-40 px-6 md:px-10 pointer-events-none"
     >
       <div
-        className={`max-w-[1200px] mx-auto flex items-center justify-between transition-all duration-500 pointer-events-auto ${pillClass}`}
+        className={`max-w-[1200px] mx-auto flex items-center justify-between overflow-visible transition-all duration-500 pointer-events-auto ${pillClass}`}
       >
         {onLogoClick ? (
           <button
@@ -252,13 +248,15 @@ export default function NavigationBar({
           </div>
         )}
 
-        <nav id="desktop-nav" className="hidden md:flex items-center gap-8">
-          {links.map((link) => (
-            <span key={link.label}>
-              <DesktopNavItem link={link} linkClass={linkClass} isSolid={isSolid} />
-            </span>
-          ))}
-        </nav>
+        <NavigationMenu id="desktop-nav" className="hidden md:flex max-w-none flex-none">
+          <NavigationMenuList className="gap-8">
+            {links.map((link) => (
+              <Fragment key={link.label}>
+                <DesktopNavItem link={link} isSolid={isSolid} />
+              </Fragment>
+            ))}
+          </NavigationMenuList>
+        </NavigationMenu>
 
         <div id="nav-cta-area" className="hidden md:block">
           <motion.button
@@ -331,7 +329,7 @@ export default function NavigationBar({
                         <Link
                           to="/services"
                           onClick={() => setIsOpen(false)}
-                          className="flex-1 font-display text-lg font-medium text-[#F8F5F0]/80 hover:text-[#F2B5A0] py-2 transition-all"
+                          className="flex-1 font-display text-lg font-medium text-[#F8F5F0]/80 hover:text-[#D8C5A4] py-2 transition-colors duration-200"
                         >
                           {link.label}
                         </Link>
@@ -342,7 +340,7 @@ export default function NavigationBar({
                               prev === link.label ? null : link.label,
                             )
                           }
-                          className="shrink-0 p-2 text-[#F8F5F0]/60 hover:text-[#F2B5A0] transition-colors"
+                          className="shrink-0 p-2 text-[#F8F5F0]/60 hover:text-[#D8C5A4] transition-colors duration-200"
                           aria-label={`Expand ${link.label} menu`}
                         >
                           <ChevronDown
@@ -355,12 +353,13 @@ export default function NavigationBar({
                       {expandedMobile === link.label && (
                         <div className="mt-2 flex flex-col gap-1 border-l border-[#F8F5F0]/15 pl-3">
                           {link.children.map((child) => (
-                            <NavChildLink
-                              key={`${child.label}-${child.url}`}
-                              child={child}
-                              className={mobileChildClass}
-                              onClick={() => setIsOpen(false)}
-                            />
+                            <Fragment key={`${child.label}-${child.url}`}>
+                              <NavChildLink
+                                child={child}
+                                className={mobileChildClass}
+                                onClick={() => setIsOpen(false)}
+                              />
+                            </Fragment>
                           ))}
                         </div>
                       )}
@@ -369,8 +368,7 @@ export default function NavigationBar({
                     <NavAnchor
                       link={link}
                       onClick={() => setIsOpen(false)}
-                      isSolid={false}
-                      className="font-display text-lg font-medium text-[#F8F5F0]/80 hover:text-[#F2B5A0] py-2 border-b border-[#F8F5F0]/10 transition-all block"
+                      className={mobileLinkClass}
                     />
                   )}
                 </motion.div>

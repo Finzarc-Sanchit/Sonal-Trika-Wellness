@@ -32,7 +32,8 @@ export interface UpdateContactData {
 export interface ContactListParams {
     page?: number;
     limit?: number;
-    status?: ContactStatus;
+    status?: ContactStatus | 'all';
+    service?: ContactServiceSlug | 'all';
     subject?: string;
     email?: string;
     startDate?: string;
@@ -99,7 +100,8 @@ function buildQueryString(params?: ContactListParams): string {
 
     if (params.page != null) query.append('page', String(params.page));
     if (params.limit != null) query.append('limit', String(params.limit));
-    if (params.status) query.append('status', params.status);
+    if (params.status && params.status !== 'all') query.append('status', params.status);
+    if (params.service && params.service !== 'all') query.append('service', params.service);
     if (params.subject) query.append('subject', params.subject);
     if (params.email) query.append('email', params.email);
     if (params.startDate) query.append('startDate', params.startDate);

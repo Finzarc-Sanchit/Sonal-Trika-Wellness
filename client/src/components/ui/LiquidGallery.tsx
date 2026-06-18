@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, type MouseEvent } from 'react';
 import gsap from 'gsap';
 import { useReducedMotion } from 'motion/react';
 import type { ServiceCard } from '../../data/servicesData';
@@ -33,7 +33,8 @@ function LiquidGalleryItem({
   const panTimelineRef = useRef<gsap.core.Timeline | null>(null);
   const reducedMotion = useReducedMotion();
 
-  const handlePrimaryClick = () => {
+  const handlePrimaryClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     if (onPrimaryCta) {
       onPrimaryCta(item);
       return;
@@ -41,7 +42,8 @@ function LiquidGalleryItem({
     handleServicePrimaryCta(item);
   };
 
-  const handleSecondaryClick = () => {
+  const handleSecondaryClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     if (onSecondaryCta) {
       onSecondaryCta(item);
       return;
@@ -88,12 +90,9 @@ function LiquidGalleryItem({
     <article
       ref={itemRef}
       id={item.id}
-      className="liquid-gallery-item group scroll-mt-24"
+      className="liquid-gallery-item scroll-mt-24"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onFocus={handleMouseEnter}
-      onBlur={handleMouseLeave}
-      tabIndex={0}
       aria-label={item.title}
     >
       <div className="liquid-gallery-image-wrapper">
@@ -121,16 +120,21 @@ function LiquidGalleryItem({
         <p className="liquid-gallery-mobile-desc font-sans text-[#F8F5F0]/70 max-w-md leading-relaxed md:hidden">
           {item.description}
         </p>
-        <p className="font-sans text-body-sm text-[#F8F5F0]/70 max-w-md mb-8 leading-relaxed hidden md:block">
+        <p className="font-sans text-body-sm text-[#F8F5F0]/70 max-w-md mb-8 leading-relaxed hidden md:block line-clamp-3">
           {item.description}
         </p>
       </div>
 
-      <div className="liquid-gallery-cta-bar">
+      <div
+        className="liquid-gallery-cta-bar"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
         <button
           type="button"
           onClick={handlePrimaryClick}
-          className="min-h-[44px] px-6 py-2.5 bg-[#F8F5F0] text-[#2B2B2B] font-sans text-[11px] font-semibold uppercase tracking-[0.15em] hover:bg-white transition-colors duration-300 cursor-pointer"
+          aria-label={`${item.primaryCta} — ${item.title}`}
+          className="relative z-30 min-h-[44px] px-6 py-2.5 bg-[#F8F5F0] text-[#2B2B2B] font-sans text-[11px] font-semibold uppercase tracking-[0.15em] hover:bg-white transition-colors duration-300 cursor-pointer"
         >
           {item.primaryCta}
         </button>
@@ -138,7 +142,8 @@ function LiquidGalleryItem({
           <button
             type="button"
             onClick={handleSecondaryClick}
-            className="min-h-[44px] font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-[#F8F5F0] border-b border-[#F8F5F0] pb-1 hover:text-white hover:border-white transition-all cursor-pointer"
+            aria-label={`${item.secondaryCta} — ${item.title}`}
+            className="relative z-30 min-h-[44px] font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-[#F8F5F0] border-b border-[#F8F5F0] pb-1 hover:text-white hover:border-white transition-all cursor-pointer"
           >
             {item.secondaryCta}
           </button>

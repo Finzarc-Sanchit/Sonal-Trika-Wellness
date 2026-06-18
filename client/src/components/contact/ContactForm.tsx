@@ -102,7 +102,7 @@ export default function ContactForm({
     `w-full px-4 ${compact ? 'py-3' : 'py-3.5'} rounded-xl bg-white border font-sans text-sm text-[#2B2B2B] focus:outline-none focus:ring-2 transition-colors ${
       hasError
         ? 'border-red-400/70 focus:border-red-400/70 focus:ring-red-500/10'
-        : 'border-[#D8C5A4]/50 focus:border-[#8C82B6]/50 focus:ring-[#8C82B6]/10'
+        : 'border-[#D8C5A4]/50 focus:border-[#D8C5A4] focus:ring-[#D8C5A4]/25'
     }`;
 
   const handleSubmit = async (e: FormEvent) => {

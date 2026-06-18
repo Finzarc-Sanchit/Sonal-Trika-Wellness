@@ -18,7 +18,7 @@ import {
   type Contact,
   type ContactStatus,
 } from '../../api/services/contactService';
-import { formatContactService } from '../../data/contactServices';
+import { formatContactService, CONTACT_SERVICE_OPTIONS, type ContactServiceSlug } from '../../data/contactServices';
 import { useAdminLayout } from './DashboardLayout';
 
 const STATUS_OPTIONS: { value: ContactStatus; label: string }[] = [
@@ -29,6 +29,10 @@ const STATUS_OPTIONS: { value: ContactStatus; label: string }[] = [
 ];
 
 type StatusFilter = ContactStatus | 'all';
+type ServiceFilter = ContactServiceSlug | 'all';
+
+const filterSelectClass =
+  'w-full rounded-xl border border-[#D8C5A4]/45 bg-white px-3 py-2.5 font-sans text-sm text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#D8C5A4]/30 focus:border-[#D8C5A4] cursor-pointer';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -144,6 +148,7 @@ export default function ContactMessages() {
   const [error, setError] = useState<string | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
@@ -153,14 +158,19 @@ export default function ContactMessages() {
     setLoading(true);
     setError(null);
     try {
-      const res = await contactService.getContacts({ page: 1, limit: 200 });
+      const res = await contactService.getContacts({
+        page: 1,
+        limit: 200,
+        status: statusFilter,
+        service: serviceFilter,
+      });
       setContacts(res.data.contacts);
     } catch {
       setError('Failed to load contact messages.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter, serviceFilter]);
 
   useEffect(() => {
     void loadContacts();
@@ -178,7 +188,6 @@ export default function ContactMessages() {
     const query = debouncedSearchQuery.trim().toLowerCase();
 
     let result = contacts.filter((contact) => {
-      if (statusFilter !== 'all' && contact.status !== statusFilter) return false;
       if (!query) return true;
 
       const haystack = [
@@ -201,7 +210,7 @@ export default function ContactMessages() {
     });
 
     return result;
-  }, [contacts, statusFilter, debouncedSearchQuery, sortNewestFirst]);
+  }, [contacts, debouncedSearchQuery, sortNewestFirst]);
 
   const handleStatusChange = async (id: string, nextStatus: ContactStatus) => {
     const current = contacts.find((c) => c._id === id);
@@ -250,7 +259,7 @@ export default function ContactMessages() {
 
       {/* Controls panel */}
       <div className="rounded-2xl border border-[#D8C5A4]/40 bg-white/85 backdrop-blur-xl p-4 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,180px)_1fr_auto] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,180px)_minmax(0,200px)_1fr_auto] gap-3">
           <div>
             <label
               htmlFor="status-filter"
@@ -262,10 +271,32 @@ export default function ContactMessages() {
               id="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="w-full rounded-xl border border-[#D8C5A4]/45 bg-white px-3 py-2.5 font-sans text-sm text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#8C82B6]/10 focus:border-[#8C82B6]/55 cursor-pointer"
+              className={filterSelectClass}
             >
               <option value="all">All Statuses</option>
               {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="service-filter"
+              className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-[#888888] mb-1.5 block"
+            >
+              Service
+            </label>
+            <select
+              id="service-filter"
+              value={serviceFilter}
+              onChange={(e) => setServiceFilter(e.target.value as ServiceFilter)}
+              className={filterSelectClass}
+            >
+              <option value="all">All Services</option>
+              {CONTACT_SERVICE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -313,7 +344,7 @@ export default function ContactMessages() {
       {contacts.length === 0 ? (
         <EmptyState message="No contact messages yet. Submissions from the website will appear here." />
       ) : filteredContacts.length === 0 ? (
-        <EmptyState message="No messages match your current filters. Try adjusting search or status." />
+        <EmptyState message="No messages match your current filters. Try adjusting search, status, or service." />
       ) : (
         <div className="rounded-2xl border border-[#D8C5A4]/40 bg-white/85 backdrop-blur-xl overflow-hidden shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
           <div className="overflow-x-auto">

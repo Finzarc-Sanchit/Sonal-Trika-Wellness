@@ -10,6 +10,7 @@ export interface ServiceCard {
   category: string;
   duration: string;
   description: string;
+  summary: string;
   learnMore: string;
   sessionDetails: string[];
   imageSrc: string;
@@ -37,7 +38,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
     headline: 'One-to-one restoration',
     accentColor: '#A55A42',
     subtext:
-      'When chronic stress has left your system fragmented, these private protocols meet you where you are — and guide you back to coherence.',
+      'Private protocols that meet you where you are — guiding your system back to coherence.',
     items: [
       {
         id: 'chakra-therapy',
@@ -47,6 +48,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         duration: '60–90m',
         description:
           'When emotional blocks manifest as physical tension, targeted sound frequencies restore balance across your seven energy centres.',
+        summary: 'Targeted energy and frequency alignment.',
         learnMore:
           "This practice uses specific sound frequencies, vibrations, and instruments (such as quartz crystal bowls or tuning forks) to resonate with the body's seven major energy centers, or chakras. The goal is to clear energetic blockages, align the chakras, and restore harmony between the physical and subtle bodies.",
         sessionDetails: [
@@ -70,6 +72,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         duration: '75m',
         description:
           'When the mind will not quiet, oceanic frequencies wash through the nervous system — lowering heart rate and restoring deep calm.',
+        summary: 'Water soundscapes for deep calm.',
         learnMore:
           'In sound wellness, this refers to the acoustic immersion in water sounds. It utilizes the natural, rhythmic frequencies of the ocean—or instruments that mimic them, like ocean drums and rainsticks—to act as a natural form of pink or brown noise. This continuous auditory wash helps lower the heart rate, soothe the nervous system, and induce deep, meditative relaxation.',
         sessionDetails: [
@@ -93,6 +96,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         duration: '60–90m',
         description:
           'For those navigating anxiety, insomnia, or nervous system dysregulation — evidence-informed sound protocols designed for measurable restoration.',
+        summary: 'Evidence-based sleep and stress protocols.',
         learnMore:
           'This involves the evidence-based, highly structured application of sound therapy. Rather than focusing purely on spiritual or energetic wellness, clinical protocols use measured, targeted frequencies (like binaural beats or specific Hz tones) for neurological and physiological outcomes, such as brainwave entrainment for insomnia, targeted stress reduction, or measurable pain management.',
         sessionDetails: [
@@ -116,7 +120,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
     headline: 'Collective healing experiences',
     accentColor: '#8C82B6',
     subtext:
-      'Shared resonance amplifies transformation. These group formats create space for teams, communities, and circles to restore together.',
+      'Group immersions for teams, circles, and communities to restore together.',
     items: [
       {
         id: 'corporate-wellness',
@@ -126,6 +130,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         duration: '60–90m',
         description:
           'High-performing teams carry invisible load. Immersive sound sessions rebuild focus, resilience, and collective nervous system regulation.',
+        summary: 'Acoustic recovery for corporate burnout.',
         learnMore:
           '70% of professionals report burnout symptoms — leadership performance begins with nervous system recovery. Corporate sound wellness brings structured vibrational therapy into the workplace — not as a perk, but as nervous system recovery for teams under sustained pressure. Our Executive Recovery Programs include Executive Nervous System Reset, Burnout Prevention Workshops, Women Leadership Wellness, and Team Alignment Programs — designed to shift groups out of sympathetic overdrive and into shared calm.',
         sessionDetails: [
@@ -151,6 +156,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         duration: '60–90m',
         description:
           'Multi-day immersions and festival stages where sacred sound meets nature — designed for deep release and community connection.',
+        summary: 'Immersive sound journeys for festivals.',
         learnMore:
           'Retreat and festival sessions extend sound wellness beyond a single hour — creating shared acoustic fields where groups release together. Whether held in nature, at a wellness retreat, or on a festival stage, these immersions use full gong and bowl arrays to hold space for collective nervous system down-regulation and emotional catharsis in community.',
         sessionDetails: [
@@ -175,6 +181,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         duration: '90m',
         description:
           'Lunar cycles mark natural thresholds for release and renewal. These ceremonial sound baths align your rhythm with the cosmos.',
+        summary: 'Ceremonial group lunar sound baths.',
         learnMore:
           'New Moon and Full Moon sound baths are ceremonial group sessions timed to lunar phases — natural thresholds for intention-setting, release, and renewal. Full Moons support letting go of what no longer serves; New Moons support planting intentions in quiet ground. The gong and bowls hold space while the group rests together under the current lunar arc.',
         sessionDetails: [
@@ -199,7 +206,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
     headline: 'Learn the craft of sacred sound',
     accentColor: '#7A8B6F',
     subtext:
-      'For those called to hold space for others — structured learning paths from foundational practice to advanced instrument mastery.',
+      'Structured learning paths from foundational practice to advanced instrument mastery.',
     items: [
       {
         id: 'beginners-workshop',
@@ -209,6 +216,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         duration: '3–4 hrs',
         description:
           'No prior experience required. Learn the principles of vibrational therapy, bowl techniques, and holding space for healing.',
+        summary: 'Foundational bowl playing and space-holding.',
         learnMore:
           'This foundational workshop introduces the science and art of sound healing for those new to the practice. You will learn how vibration affects the nervous system, how to play singing bowls safely and intentionally, and the ethics of holding space for others — without needing any prior musical or wellness training.',
         sessionDetails: [
@@ -232,6 +240,7 @@ export const SERVICE_GROUPS: ServiceGroup[] = [
         duration: '4–6 hrs',
         description:
           'Deep-dive modules in gong mastery and singing bowl artistry — for practitioners ready to refine technique and expand their repertoire.',
+        summary: 'Advanced masterclasses in instrumentation craft.',
         learnMore:
           'Advanced modules for practitioners ready to deepen their instrument relationship and session craft. Each module focuses on either gong mastery or singing bowl artistry — technique, sequencing, reading group energy, and building the sustained acoustic fields required for immersions and private client work.',
         sessionDetails: [

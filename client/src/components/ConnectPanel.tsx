@@ -10,6 +10,7 @@ import {
   CONNECT_PANEL_EVENT,
   type ConnectPanelDetail,
 } from '../utils/serviceCta';
+import { openBookingModal } from '../utils/bookingModal';
 import RetreatModal, { type RetreatFormData } from './retreats/RetreatModal';
 import type { RetreatLocation } from '../api/services/retreatService';
 import { createContact } from '../api/services/contactService';
@@ -143,7 +144,7 @@ export default function ConnectPanel({ onSubmit }: ConnectPanelProps) {
             animate={{ opacity: 1, scale: 1, y: [0, -4, 0] }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ y: { duration: 3, repeat: Infinity, ease: 'easeInOut' } }}
-            onClick={() => setIsOpen(true)}
+            onClick={() => openBookingModal()}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
             className="fixed bottom-8 right-8 z-50 w-14 h-14 rounded-full bg-[#A55A42] text-white shadow-2xl shadow-[#A55A42]/30 flex items-center justify-center cursor-pointer group"

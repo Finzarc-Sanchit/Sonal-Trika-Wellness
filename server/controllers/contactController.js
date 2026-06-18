@@ -87,8 +87,12 @@ const getContacts = async (req, res) => {
 
         const filter = {};
 
-        if (req.query.status) {
+        if (req.query.status && req.query.status !== "all") {
             filter.status = req.query.status;
+        }
+
+        if (req.query.service && req.query.service !== "all") {
+            filter.service = req.query.service;
         }
 
         if (req.query.email) {
