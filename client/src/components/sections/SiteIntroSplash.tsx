@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import StardustBackground from '../ui/StardustBackground';
+import { shouldSkipSiteIntro, markSiteIntroCompleted } from '../../utils/siteIntro';
 
 interface SiteIntroSplashProps {
   onComplete: () => void;
@@ -19,6 +20,7 @@ export default function SiteIntroSplash({ onComplete }: SiteIntroSplashProps) {
   const [visible, setVisible] = useState(true);
   const [phase, setPhase] = useState<Phase>('label');
   const [scrollUp, setScrollUp] = useState(false);
+  const [skipIntro] = useState(() => shouldSkipSiteIntro());
 
   const dismiss = useCallback(() => {
     setPhase('exit');
@@ -30,13 +32,33 @@ export default function SiteIntroSplash({ onComplete }: SiteIntroSplashProps) {
   }, [onComplete]);
 
   useEffect(() => {
+    const navigationEntries =
+      typeof window !== 'undefined'
+        ? (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)
+        : undefined;
+    const isReload = Boolean(navigationEntries && navigationEntries.type === 'reload');
+    const comingFromInternalPage =
+      typeof document !== 'undefined' &&
+      Boolean(document.referrer) &&
+      document.referrer.includes(window.location.origin);
+
+    const shouldSkipIntro = comingFromInternalPage && !isReload;
+
+    if (skipIntro || shouldSkipIntro) {
+      markSiteIntroCompleted();
+      onComplete();
+      return;
+    }
+
     const t1 = window.setTimeout(() => setPhase('headline'), 1000);
     const t2 = window.setTimeout(dismiss, 2800);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
     };
-  }, [dismiss]);
+  }, [dismiss, onComplete, skipIntro]);
+
+  if (skipIntro) return null;
 
   return (
     <AnimatePresence>

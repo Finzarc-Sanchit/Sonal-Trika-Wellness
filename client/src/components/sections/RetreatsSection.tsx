@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   motion,
   useAnimationControls,
@@ -77,39 +77,21 @@ function DesktopMarqueeTrack() {
 }
 
 function MobileScrollTrack() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [showCue, setShowCue] = useState(true);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const hide = () => setShowCue(false);
-    el.addEventListener('scroll', hide, { once: true });
-    el.addEventListener('touchstart', hide, { once: true });
-    return () => {
-      el.removeEventListener('scroll', hide);
-      el.removeEventListener('touchstart', hide);
-    };
-  }, []);
-
   return (
-    <div className="md:hidden relative w-full">
-      {showCue && (
-        <p className="absolute -top-7 left-1/2 -translate-x-1/2 font-sans text-caption text-[#888888] tracking-tight animate-pulse pointer-events-none">
-          Swipe →
-        </p>
-      )}
-      <div
-        ref={scrollRef}
-        className="flex gap-5 overflow-x-auto pb-6 px-[max(1.5rem,calc((100vw-300px)/2))] snap-x snap-mandatory scrollbar-hide"
-      >
+    <div className="md:hidden relative w-full px-4 sm:px-6">
+      {/* Dynamic, auto-scaling vertical grid context designed cleanly for compact views */}
+      <div className="flex flex-col items-center gap-6 w-full">
         {RETREAT_LOCATIONS.map((loc, i) => (
-          <RetreatDestinationCard
+          <div
             key={loc.slug}
-            location={loc}
-            index={i}
-            animateIn
-          />
+            className="w-full max-w-sm sm:max-w-md [&>.retreat-card]:w-full"
+          >
+            <RetreatDestinationCard
+              location={loc}
+              index={i}
+              animateIn
+            />
+          </div>
         ))}
       </div>
     </div>
@@ -118,19 +100,19 @@ function MobileScrollTrack() {
 
 export default function RetreatsSection() {
   return (
-    <section id="retreats" className="relative overflow-hidden py-20 md:py-[120px]">
+    <section id="retreats" className="relative overflow-hidden py-16 md:py-[120px]">
       <RetreatAmbientBackground />
 
       <div className="relative z-10 flex flex-col">
         <Container className="w-full">
           <SectionReveal>
-            <div className="mb-14 md:mb-16 text-left max-w-xl">
+            <div className="mb-10 md:mb-16 text-left max-w-xl">
               <SectionLabel dotColor="#7A8B6F">Retreats</SectionLabel>
               <RetreatTypewriterHeadline
                 text="Immersive healing destinations"
                 className="text-left mx-0 max-w-none"
               />
-              <p className="mt-5 font-sans text-body-sm text-[#888888] leading-relaxed">
+              <p className="mt-4 md:mt-5 font-sans text-body-sm text-[#888888] leading-relaxed">
                 Multi-day immersions in nature — gong ceremonies, sound baths, and deep nervous system
                 restoration in carefully chosen destinations.
               </p>
@@ -145,7 +127,7 @@ export default function RetreatsSection() {
 
         <Container className="w-full">
           <SectionReveal delay={0.15}>
-            <div className="mt-12 flex justify-center">
+            <div className="mt-10 md:mt-12 flex justify-center">
               <button
                 type="button"
                 onClick={() =>

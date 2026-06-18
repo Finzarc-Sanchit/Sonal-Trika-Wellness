@@ -34,7 +34,7 @@ interface TextTypeProps {
   cursorClassName?: string;
   cursorBlinkDuration?: number;
   textColors?: string[];
-  variableSpeed?: { min: number; max: number };
+  variableSpeed?: { min: number; max: number; };
   onSentenceComplete?: (sentence: string, index: number) => void;
   startOnVisible?: boolean;
   reverseMode?: boolean;
@@ -129,7 +129,7 @@ export default function TextType({
 
           setCurrentTextIndex((prev) => (prev + 1) % textArray.length);
           setCurrentCharIndex(0);
-          timeout = setTimeout(() => {}, pauseDuration);
+          timeout = setTimeout(() => { }, pauseDuration);
         } else {
           timeout = setTimeout(() => {
             setDisplayedText((prev) => prev.slice(0, -1));

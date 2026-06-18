@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, type RefObject } from 'react';
+import { useState } from 'react';
 import StatCountUp, { type StatCountUpFormat } from './StatCountUp';
 
 interface StatHighlightCardProps {
   imageSrc: string;
-  triggerRef: RefObject<HTMLElement | null>;
   from: number;
   to: number;
   label: string;
@@ -18,7 +17,6 @@ interface StatHighlightCardProps {
 
 export default function StatHighlightCard({
   imageSrc,
-  triggerRef,
   from,
   to,
   label,
@@ -63,7 +61,6 @@ export default function StatHighlightCard({
           to={to}
           format={format}
           prefix={prefix}
-          triggerRef={triggerRef}
           duration={2}
           className={`font-display text-2xl font-bold transition-colors duration-500 md:text-3xl ${
             hovered ? 'text-[#F8F5F0]' : 'text-[#2B2B2B]'

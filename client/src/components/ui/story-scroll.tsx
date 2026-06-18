@@ -11,6 +11,56 @@ import { useGSAP } from '@gsap/react';
 gsap.registerPlugin(ScrollTrigger);
 
 const BRIGHT_BG = '#FDF8F0';
+const REFRESH_DEBOUNCE_S = 0.1;
+
+function createScrollRefreshScheduler() {
+  const call = gsap.delayedCall(REFRESH_DEBOUNCE_S, () => ScrollTrigger.refresh()).pause();
+
+  return {
+    schedule() {
+      call.restart(true);
+    },
+    kill() {
+      call.kill();
+    },
+  };
+}
+
+function bindSectionMeasurements(
+  root: HTMLElement,
+  sections: HTMLElement[],
+  scheduleRefresh: () => void,
+) {
+  const observed = new Set<Element>();
+  const resizeObserver = new ResizeObserver(scheduleRefresh);
+
+  const observe = (node: Element | null | undefined) => {
+    if (!node || observed.has(node)) return;
+    observed.add(node);
+    resizeObserver.observe(node);
+  };
+
+  sections.forEach((section) => {
+    observe(section);
+    observe(section.querySelector<HTMLElement>('[data-flow-inner]'));
+    observe(section.querySelector<HTMLElement>('.flow-art-container'));
+  });
+
+  root.querySelectorAll('img').forEach((img) => {
+    if (img.complete) return;
+    img.addEventListener('load', scheduleRefresh, { once: true });
+    img.addEventListener('error', scheduleRefresh, { once: true });
+  });
+
+  return () => {
+    resizeObserver.disconnect();
+    root.querySelectorAll('img').forEach((img) => {
+      img.removeEventListener('load', scheduleRefresh);
+      img.removeEventListener('error', scheduleRefresh);
+    });
+  };
+}
+
 
 function cx(...parts: Array<string | undefined | false | null>): string {
   return parts.filter(Boolean).join(' ');
@@ -25,11 +75,12 @@ export interface FlowSectionProps {
 
 export const FlowSection: React.FC<FlowSectionProps> = ({
   className,
-  style = {},
+  style,
   children,
   'aria-label': ariaLabel,
 }) => {
-  const { backgroundColor, background, color, ...innerStyle } = style;
+  const sectionStyle: React.CSSProperties = style ?? {};
+  const { backgroundColor, background, color, ...innerStyle } = sectionStyle;
   const sectionSurface: React.CSSProperties = {
     backgroundColor: backgroundColor ?? (background ? undefined : BRIGHT_BG),
     background,
@@ -95,16 +146,18 @@ const FlowArt: React.FC<FlowArtProps> = ({
 
   useGSAP(
     () => {
-      if (!containerRef.current || reducedMotion || !isDesktop) return;
+      const root = containerRef.current as HTMLElement | null;
+      if (!root || reducedMotion || !isDesktop) return;
 
       const sections = Array.from(
-        containerRef.current.querySelectorAll<HTMLElement>('[data-flow-section]'),
+        root.querySelectorAll<HTMLElement>('[data-flow-section]'),
       );
       if (sections.length === 0) return;
 
+      const refreshScheduler = createScrollRefreshScheduler();
       const triggers: ScrollTrigger[] = [];
 
-      sections.forEach((section, i) => {
+      sections.forEach((section: HTMLElement, i: number) => {
         gsap.set(section, { zIndex: i + 1 });
 
         const inner = section.querySelector<HTMLElement>('.flow-art-container');
@@ -112,16 +165,17 @@ const FlowArt: React.FC<FlowArtProps> = ({
 
         if (i > 0) {
           const prevInner = sections[i - 1]?.querySelector<HTMLElement>('.flow-art-container');
-          gsap.set(inner, { rotation: 30, transformOrigin: 'bottom left' });
+          gsap.set(inner, { y: '100%' });
 
           const tween = gsap.to(inner, {
-            rotation: 0,
+            y: '0%',
             ease: 'none',
             scrollTrigger: {
               trigger: section,
               start: 'top bottom',
               end: 'top 25%',
               scrub: true,
+              invalidateOnRefresh: true,
             },
           });
           if (tween.scrollTrigger) triggers.push(tween.scrollTrigger);
@@ -135,6 +189,7 @@ const FlowArt: React.FC<FlowArtProps> = ({
                 start: 'top bottom',
                 end: 'top 30%',
                 scrub: true,
+                invalidateOnRefresh: true,
               },
             });
             if (fadeTween.scrollTrigger) triggers.push(fadeTween.scrollTrigger);
@@ -150,14 +205,24 @@ const FlowArt: React.FC<FlowArtProps> = ({
               pin: true,
               pinSpacing: false,
               anticipatePin: 1,
+              invalidateOnRefresh: true,
             }),
           );
         }
       });
 
+      const disconnectMeasurements = bindSectionMeasurements(
+        root,
+        sections,
+        refreshScheduler.schedule,
+      );
+
+      refreshScheduler.schedule();
       ScrollTrigger.refresh();
 
       return () => {
+        disconnectMeasurements();
+        refreshScheduler.kill();
         triggers.forEach((t) => t.kill());
       };
     },

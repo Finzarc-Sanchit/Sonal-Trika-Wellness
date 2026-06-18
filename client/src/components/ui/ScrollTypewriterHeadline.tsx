@@ -3,11 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
+import { useEffect, useState } from 'react';
+import { useInViewOnce } from '../../hooks/useInViewOnce';
 
 interface ScrollTypewriterHeadlineProps {
   lineOne: string;
@@ -18,7 +15,6 @@ interface ScrollTypewriterHeadlineProps {
   speed?: number;
   className?: string;
   lineClassName?: string;
-  triggerRef?: RefObject<HTMLElement | null>;
 }
 
 export default function ScrollTypewriterHeadline({
@@ -30,9 +26,8 @@ export default function ScrollTypewriterHeadline({
   speed = 52,
   className = '',
   lineClassName = '',
-  triggerRef: externalTriggerRef,
 }: ScrollTypewriterHeadlineProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { ref: containerRef, isInView } = useInViewOnce<HTMLDivElement>(0.1);
   const [started, setStarted] = useState(false);
   const [lineOneCount, setLineOneCount] = useState(0);
   const [lineTwoCount, setLineTwoCount] = useState(0);
@@ -43,25 +38,14 @@ export default function ScrollTypewriterHeadline({
   const typingLineTwo = lineOneDone && !lineTwoDone;
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    if (isInView) setStarted(true);
+  }, [isInView]);
 
-    const trigger = externalTriggerRef?.current ?? el;
-    const st = ScrollTrigger.create({
-      trigger,
-      start: 'top 78%',
-      once: true,
-      onEnter: () => setStarted(true),
-    });
-
+  useEffect(() => {
     const onReveal = () => setStarted(true);
     window.addEventListener('founder-section-reveal', onReveal);
-
-    return () => {
-      st.kill();
-      window.removeEventListener('founder-section-reveal', onReveal);
-    };
-  }, [externalTriggerRef]);
+    return () => window.removeEventListener('founder-section-reveal', onReveal);
+  }, []);
 
   useEffect(() => {
     if (!started || lineOneDone) return;

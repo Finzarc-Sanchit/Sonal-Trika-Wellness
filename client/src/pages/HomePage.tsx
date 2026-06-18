@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import NavigationBar from '../components/NavigationBar';
@@ -18,6 +18,7 @@ import Footer from '../components/layout/Footer';
 import ConnectPanel from '../components/ConnectPanel';
 import { NAV_LINKS } from '../data/navigation';
 import { openConnectPanel } from '../utils/serviceCta';
+import { markSiteIntroCompleted, shouldShowSiteIntro } from '../utils/siteIntro';
 
 const HERO_VIDEO = '/videos/hero.mp4';
 
@@ -29,8 +30,13 @@ interface ToastNotification {
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [introDone, setIntroDone] = useState(false);
+  const [introDone, setIntroDone] = useState(() => !shouldShowSiteIntro());
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+
+  const handleIntroComplete = useCallback(() => {
+    markSiteIntroCompleted();
+    setIntroDone(true);
+  }, []);
 
   useEffect(() => {
     if (!introDone) {
@@ -53,7 +59,7 @@ export default function HomePage() {
 
   return (
     <div className="relative bg-[#F8F5F0] min-h-screen w-full text-[#2B2B2B]">
-      {!introDone && <SiteIntroSplash onComplete={() => setIntroDone(true)} />}
+      {!introDone && <SiteIntroSplash onComplete={handleIntroComplete} />}
       <NavigationBar
         links={NAV_LINKS}
         ctaText="Book a Session"

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, Fragment } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useReducedMotion } from 'motion/react';
@@ -34,6 +34,57 @@ const GROUP_HEADLINES: Record<string, { text: string; accentWord?: string }> = {
   group: { text: 'Collective healing experiences', accentWord: 'healing' },
   teaching: { text: 'Learn the craft of sacred sound', accentWord: 'sacred' },
 };
+
+interface MobileServiceCardProps {
+  item: ServiceCard;
+  onPrimaryCta: (item: ServiceCard) => void;
+  onSecondaryCta: (item: ServiceCard) => void;
+}
+
+function MobileServiceCard({ item, onPrimaryCta, onSecondaryCta }: MobileServiceCardProps) {
+  return (
+    <div id={item.id} className="flex flex-col gap-4 scroll-mt-24">
+      <div className="relative w-full aspect-[4/5] overflow-hidden rounded-2xl bg-[#1A1A1A] shadow-lg">
+        <img
+          src={item.imageSrc}
+          alt={item.imageAlt}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#1A1A1A] via-[#1A1A1A]/40 to-transparent p-6">
+          <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#a1999b]">
+            {item.duration} · {item.category}
+          </p>
+          <h2 className="mb-3 font-display text-2xl text-white">{item.title}</h2>
+          <p className="font-sans text-sm leading-relaxed text-[#F8F5F0]/80">{item.description}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:gap-4">
+        <button
+          type="button"
+          onClick={() => onPrimaryCta(item)}
+          aria-label={`${item.primaryCta} — ${item.title}`}
+          className="min-h-[44px] cursor-pointer bg-[#8C82B6] px-6 py-2.5 font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors duration-300 hover:bg-[#7a72a6]"
+        >
+          {item.primaryCta}
+        </button>
+        {item.secondaryCta && (
+          <button
+            type="button"
+            onClick={() => onSecondaryCta(item)}
+            aria-label={`${item.secondaryCta} — ${item.title}`}
+            className="min-h-[44px] cursor-pointer bg-[#2B2B2B] px-6 py-2.5 font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-[#F8F5F0] shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-colors duration-300 hover:bg-[#3d3d3d]"
+          >
+            {item.secondaryCta}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function ServicesSection({
   onPrimaryCta = handleServicePrimaryCta,
@@ -179,12 +230,28 @@ export default function ServicesSection({
               </div>
             </Container>
 
-            <LiquidGallery
-              items={group.items}
-              compact={group.compact}
-              onPrimaryCta={onPrimaryCta}
-              onSecondaryCta={resolveSecondaryCta}
-            />
+            <div className="hidden md:block">
+              <LiquidGallery
+                items={group.items}
+                compact={group.compact}
+                onPrimaryCta={onPrimaryCta}
+                onSecondaryCta={resolveSecondaryCta}
+              />
+            </div>
+
+            <div className="mt-6 block w-full px-4 md:hidden">
+              <div className="flex flex-col gap-4">
+                {group.items.map((item) => (
+                  <Fragment key={item.id}>
+                    <MobileServiceCard
+                      item={item}
+                      onPrimaryCta={onPrimaryCta}
+                      onSecondaryCta={resolveSecondaryCta}
+                    />
+                  </Fragment>
+                ))}
+              </div>
+            </div>
           </div>
         );
       })}

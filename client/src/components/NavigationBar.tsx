@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useCallback, Fragment } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useCallback, Fragment, type MouseEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, ArrowUpRight, ChevronDown } from 'lucide-react';
 import {
@@ -18,7 +18,7 @@ import { MenuLink, MenuLinkChild } from '../types';
 import TrikaLogo from './ui/TrikaLogo';
 import ContactBookingModal from './contact/ContactBookingModal';
 import { onScrollThreshold } from '../utils/performance';
-import { parseInternalUrl, scrollToHashTarget } from '../utils/scrollToHash';
+import { parseInternalUrl, scrollToHashTarget, scrollToTestimonialsInstant } from '../utils/scrollToHash';
 import { NavLinkLabel } from './navigation/NavLinkParts';
 import { getDesktopNavLinkClass } from '../utils/navLinkStyles';
 import { BOOKING_MODAL_EVENT } from '../utils/bookingModal';
@@ -99,7 +99,23 @@ function NavAnchor({
   className: string;
   onClick?: () => void;
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const cls = `${className} group relative transition-colors duration-200`;
+
+  const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (link.label === 'Testimonials') {
+      e.preventDefault();
+      onClick?.();
+      if (location.pathname !== '/') {
+        navigate({ pathname: '/', hash: '#testimonials' });
+        return;
+      }
+      scrollToTestimonialsInstant();
+      return;
+    }
+    onClick?.();
+  };
 
   if (isInternalPath(link.url)) {
     const parsed = parseInternalUrl(link.url);
@@ -108,7 +124,7 @@ function NavAnchor({
       : link.url;
 
     return (
-      <Link to={to} className={cls} onClick={onClick}>
+      <Link to={to} className={cls} onClick={handleClick}>
         <span>{link.label}</span>
         <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-[#D8C5A4] transition-all duration-300 group-hover:w-full" />
       </Link>
@@ -130,7 +146,19 @@ function DesktopNavMenuLink({
   link: MenuLink;
   isSolid: boolean;
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const cls = getDesktopNavLinkClass(isSolid);
+
+  const handleTestimonialsClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (link.label !== 'Testimonials') return;
+    e.preventDefault();
+    if (location.pathname !== '/') {
+      navigate({ pathname: '/', hash: '#testimonials' });
+      return;
+    }
+    scrollToTestimonialsInstant();
+  };
 
   if (isInternalPath(link.url)) {
     const parsed = parseInternalUrl(link.url);
@@ -140,7 +168,11 @@ function DesktopNavMenuLink({
 
     return (
       <NavigationMenuLink asChild>
-        <Link to={to} className={cls}>
+        <Link
+          to={to}
+          className={cls}
+          onClick={link.label === 'Testimonials' ? handleTestimonialsClick : undefined}
+        >
           <NavLinkLabel label={link.label} />
         </Link>
       </NavigationMenuLink>

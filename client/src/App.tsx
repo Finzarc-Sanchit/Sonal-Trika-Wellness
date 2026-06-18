@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
@@ -16,9 +16,24 @@ import ContactMessages from './pages/admin/ContactMessages';
 import NewsletterList from './pages/admin/NewsletterList';
 import RetreatManagement from './pages/admin/RetreatManagement';
 
-import { scrollToHashTarget } from './utils/scrollToHash';
+import { scrollToHashTarget, scrollToTestimonialsInstant } from './utils/scrollToHash';
+import { markInternalNavigationToHome } from './utils/siteIntro';
 import { isAdminAuthenticated, verifyAdminToken } from './api/auth';
 import { Loader2 } from 'lucide-react';
+
+function HomeReturnTracker() {
+  const { pathname } = useLocation();
+  const prevPathRef = useRef(pathname);
+
+  useEffect(() => {
+    if (pathname === '/' && prevPathRef.current !== '/') {
+      markInternalNavigationToHome();
+    }
+    prevPathRef.current = pathname;
+  }, [pathname]);
+
+  return null;
+}
 
 function ScrollToTopOnNavigate() {
   const { pathname, hash } = useLocation();
@@ -48,7 +63,13 @@ function ScrollToHash() {
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
     const delay =
       pathname === '/services' ? (isMobile ? 500 : 500) : 120;
-    const timer = window.setTimeout(() => scrollToHashTarget(id), delay);
+    const timer = window.setTimeout(() => {
+      if (id === 'testimonials') {
+        scrollToTestimonialsInstant();
+        return;
+      }
+      scrollToHashTarget(id);
+    }, delay);
 
     return () => window.clearTimeout(timer);
   }, [pathname, hash, navigate]);
@@ -90,7 +111,7 @@ function RequireAdmin() {
   return <Outlet />;
 }
 
-function RedirectIfAdmin({ children }: { children: ReactNode }) {
+function RedirectIfAdmin({ children }: { children: ReactNode; }) {
   const navigate = useNavigate();
 
   // Keep this synchronous for instant route bounce; `verifyAdminToken()` will still
@@ -116,6 +137,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <HomeReturnTracker />
       <ScrollToTopOnNavigate />
       <ScrollToHash />
       <Routes>

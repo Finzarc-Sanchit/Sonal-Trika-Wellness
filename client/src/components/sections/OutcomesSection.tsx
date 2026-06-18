@@ -3,23 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 import { motion } from 'motion/react';
 import SectionLabel from '../ui/SectionLabel';
-import { shouldDisableHeavyMotion } from '../../utils/performance';
-import {
-  registerBackgroundVideo,
-  onBackgroundMediaPause,
-  onBackgroundMediaResume,
-} from '../../utils/backgroundMedia';
+import ImageZoomReveal from '../ui/ImageZoomReveal';
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
-const OUTCOMES_VIDEO = '/videos/outcomes.mp4';
-const CLIP_DURATION = 8;
+const ABOUT_IMAGE = '/images/about/about-section-image.webp';
 const BRIGHT_BG = '#FDF8F0';
 
 const OUTCOMES = [
@@ -38,115 +32,30 @@ function headingShadow(accent: string) {
     : '1px 1px 0 #8e4a35, 2px 2px 0 rgba(142,74,53,0.35)';
 }
 
-function OutcomesVideo() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const visibleRef = useRef(false);
-  const busPausedRef = useRef(false);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    const wrap = wrapRef.current;
-    if (!video || !wrap) return;
-
-    const unregister = registerBackgroundVideo(video);
-
-    const handleTimeUpdate = () => {
-      if (video.currentTime >= CLIP_DURATION) video.currentTime = 0;
-    };
-
-    video.addEventListener('timeupdate', handleTimeUpdate);
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        visibleRef.current = entry.isIntersecting;
-        if (entry.isIntersecting && !busPausedRef.current) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      },
-      { threshold: 0.2 },
-    );
-    observer.observe(wrap);
-
-    const onBusPause = onBackgroundMediaPause(() => {
-      busPausedRef.current = true;
-      video.pause();
-    });
-
-    const onBusResume = onBackgroundMediaResume(() => {
-      busPausedRef.current = false;
-      if (visibleRef.current) {
-        video.play().catch(() => {});
-      }
-    });
-
-    return () => {
-      unregister();
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      observer.disconnect();
-      onBusPause();
-      onBusResume();
-    };
-  }, []);
-
+function OutcomesImage() {
   return (
-    <div ref={wrapRef} className="relative h-full w-full overflow-hidden min-h-[300px] md:min-h-0">
-      <video
-        ref={videoRef}
-        src={OUTCOMES_VIDEO}
-        autoPlay
-        muted
-        playsInline
-        preload="metadata"
-        className="absolute inset-0 h-full w-[120%] max-w-none object-cover object-left-center -left-[2%]"
-        aria-label="Sound healing outcomes visual"
-      />
-      {/* Right-edge fade only — video stays fully visible on the left */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `linear-gradient(to right, transparent 48%, rgba(253,248,240,0.35) 72%, ${BRIGHT_BG} 94%)`,
-        }}
-      />
+    /* Added px-4 and md:px-8 to create custom safe left/right breathing space frames around the image layout */
+    <div className="relative h-full w-full overflow-hidden min-h-[320px] md:min-h-0 px-4 md:px-8 py-4 md:py-6 flex items-center justify-center">
+      <ImageZoomReveal delay={0.15} className="h-full w-full">
+        <img
+          src={ABOUT_IMAGE}
+          alt="Sound healing meditation space layout context"
+          className="w-full h-full object-cover object-center rounded-2xl shadow-sm"
+        />
+      </ImageZoomReveal>
     </div>
   );
 }
 
 export default function OutcomesSection() {
-  const pinRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const itemsRef = useRef<HTMLLIElement[]>([]);
 
   useLayoutEffect(() => {
-    const pin = pinRef.current;
     const list = listRef.current;
-    if (!pin) return;
 
     const ctx = gsap.context(() => {
-      if (!shouldDisableHeavyMotion()) {
-        ScrollTrigger.create({
-          trigger: pin,
-          start: 'top top',
-          end: '+=50%',
-          pin: true,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onLeave: (self) => {
-            if (self.direction === 1 && window.scrollY > 80) {
-              window.dispatchEvent(new CustomEvent('founder-section-reveal'));
-              gsap.to(window, {
-                scrollTo: { y: '#founder-story', offsetY: 0 },
-                duration: 0.6,
-                ease: 'power3.inOut',
-              });
-            }
-          },
-        });
-      }
-
       if (list && itemsRef.current.length) {
         gsap.set(itemsRef.current, { x: 72, opacity: 0 });
         gsap.to(itemsRef.current, {
@@ -174,7 +83,7 @@ export default function OutcomesSection() {
 
   return (
     <section ref={sectionRef} id="outcomes" className="relative w-full bg-white pt-2 md:pt-4 pb-0">
-      <div ref={pinRef} className="w-full">
+      <div className="w-full">
         <motion.div
           initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -204,12 +113,11 @@ export default function OutcomesSection() {
             </motion.h2>
           </div>
 
-          {/* Video extended 20%: 70% vs previous 58% */}
           <div
             className="grid grid-cols-1 md:grid-cols-[70fr_30fr] h-auto md:h-[min(520px,72vh)] min-h-0 overflow-hidden"
             style={{ backgroundColor: BRIGHT_BG }}
           >
-            <OutcomesVideo />
+            <OutcomesImage />
 
             <div
               className="flex flex-col justify-center overflow-hidden px-5 md:px-7 lg:px-8 py-8 md:py-10"

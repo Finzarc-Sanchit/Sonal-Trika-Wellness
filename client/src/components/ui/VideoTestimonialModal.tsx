@@ -43,7 +43,7 @@ const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
     const startPlayback = () => {
       logVideoLoadTime(video.id, loadStartRef.current, 'canplay');
       setReady(true);
-      void el.play().catch(() => {});
+      void el.play().catch(() => { });
       watchDroppedFrames(el, video.id);
     };
 
@@ -67,7 +67,7 @@ const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
 
   return (
     <div
-      className="relative mx-auto w-full max-w-[min(400px,88vw)] max-h-[72vh] aspect-[9/16] bg-black flex items-center justify-center"
+      className="relative mx-auto w-full bg-black flex items-center justify-center h-full"
     >
       {!ready && !error && (
         <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -89,9 +89,8 @@ const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
         poster={video.posterSrc}
         controls
         playsInline
-        className={`video-player-contain w-full h-full bg-black transition-opacity duration-300 ${
-          ready ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`w-full h-full object-cover rounded-xl bg-black transition-opacity duration-300 md:rounded-none ${ready ? 'opacity-100' : 'opacity-0'
+          }`}
       />
     </div>
   );
@@ -141,19 +140,23 @@ function VideoTestimonialModal({ video, onClose }: VideoTestimonialModalProps) {
           />
 
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-4 pointer-events-none"
             role="dialog"
             aria-modal="true"
             aria-label={`Video testimonial from ${video.name}`}
           >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="pointer-events-auto w-full max-w-[min(400px,92vw)]"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="pointer-events-auto w-full max-w-[290px] sm:max-w-[320px] md:max-w-[min(400px,92vw)]"
             >
-              <div className="relative rounded-2xl overflow-hidden bg-[#1A1A1A] shadow-2xl border border-[#F8F5F0]/10">
+              {/* Mobile Layout Optimization: 
+                Reduced width layout (`max-w-[290px]`), combined with an aspect-ratio frame box 
+                (`aspect-[3/4]`), forces a clean, narrow vertical card shape fit.
+              */}
+              <div className="relative rounded-2xl overflow-hidden bg-[#1A1A1A] shadow-2xl border border-[#F8F5F0]/10 aspect-[3/4] md:aspect-auto md:h-auto">
                 <button
                   type="button"
                   onClick={onClose}
@@ -164,7 +167,7 @@ function VideoTestimonialModal({ video, onClose }: VideoTestimonialModalProps) {
 
                 <VideoTestimonialPlayer key={video.id} video={video} />
 
-                <div className="p-6 md:p-8 bg-[#F8F5F0]">
+                <div className="hidden md:block p-6 md:p-8 bg-[#F8F5F0]">
                   <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#888888] mb-2">
                     Video Testimonial
                   </p>

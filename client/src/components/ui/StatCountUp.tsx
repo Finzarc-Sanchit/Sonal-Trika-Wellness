@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
+import { useInViewOnce } from '../../hooks/useInViewOnce';
 
 export type StatCountUpFormat = 'number' | 'plus' | 'range';
 
@@ -18,7 +16,12 @@ interface StatCountUpProps {
   prefix?: string;
   duration?: number;
   className?: string;
-  triggerRef?: RefObject<HTMLElement | null>;
+}
+
+function formatValue(n: number, format: StatCountUpFormat, prefix: string) {
+  if (format === 'plus') return `${Math.round(n)}+`;
+  if (format === 'range') return `${prefix}${Math.round(n)}`;
+  return String(Math.round(n));
 }
 
 export default function StatCountUp({
@@ -28,52 +31,46 @@ export default function StatCountUp({
   prefix = '',
   duration = 1.8,
   className = '',
-  triggerRef,
 }: StatCountUpProps) {
-  const ref = useRef<HTMLParagraphElement>(null);
+  const { ref, isInView } = useInViewOnce<HTMLParagraphElement>(0.1);
   const valueRef = useRef({ val: from });
+  const hasAnimatedRef = useRef(false);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    valueRef.current.val = from;
+    el.textContent = formatValue(from, format, prefix);
+  }, [from, format, prefix, ref]);
 
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !isInView || hasAnimatedRef.current) return;
+
+    hasAnimatedRef.current = true;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const trigger = triggerRef?.current ?? el;
-
-    const render = (n: number) => {
-      if (format === 'plus') {
-        el.textContent = `${Math.round(n)}+`;
-      } else if (format === 'range') {
-        el.textContent = `${prefix}${Math.round(n)}`;
-      } else {
-        el.textContent = String(Math.round(n));
-      }
-    };
 
     if (reduced) {
-      render(to);
+      el.textContent = formatValue(to, format, prefix);
       return;
     }
 
     valueRef.current.val = from;
-    render(from);
+    el.textContent = formatValue(from, format, prefix);
 
-    const ctx = gsap.context(() => {
-      gsap.to(valueRef.current, {
-        val: to,
-        duration,
-        ease: 'power2.out',
-        scrollTrigger: {
-          trigger,
-          start: 'top 82%',
-          once: true,
-        },
-        onUpdate: () => render(valueRef.current.val),
-      });
-    }, el);
+    const tween = gsap.to(valueRef.current, {
+      val: to,
+      duration,
+      ease: 'power2.out',
+      onUpdate: () => {
+        el.textContent = formatValue(valueRef.current.val, format, prefix);
+      },
+    });
 
-    return () => ctx.revert();
-  }, [from, to, format, prefix, duration, triggerRef]);
+    return () => {
+      tween.kill();
+    };
+  }, [from, to, format, prefix, duration, isInView, ref]);
 
   return <p ref={ref} className={className} />;
 }

@@ -56,6 +56,18 @@ export function scrollToHashTarget(id: string, attempt = 0) {
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+export function scrollToTestimonialsInstant(attempt = 0) {
+  const el = document.getElementById('testimonials');
+  if (!el) {
+    if (attempt < MAX_ATTEMPTS) {
+      window.setTimeout(() => scrollToTestimonialsInstant(attempt + 1), RETRY_MS);
+    }
+    return;
+  }
+
+  el.scrollIntoView({ behavior: 'auto', block: 'start' });
+}
+
 export function parseInternalUrl(url: string): { pathname: string; hash: string } | null {
   if (!url.startsWith('/') || url.startsWith('//')) return null;
 

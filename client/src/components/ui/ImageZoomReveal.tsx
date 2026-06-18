@@ -46,10 +46,21 @@ export default function ImageZoomReveal({
             trigger: wrap,
             start: 'top 85%',
             toggleActions: 'play none none reverse',
+            invalidateOnRefresh: true,
           },
         },
       );
     }, wrap);
+
+    const scheduleRefresh = () => {
+      gsap.delayedCall(0.1, () => ScrollTrigger.refresh());
+    };
+
+    wrap.querySelectorAll('img').forEach((img) => {
+      if (img.complete) return;
+      img.addEventListener('load', scheduleRefresh, { once: true });
+      img.addEventListener('error', scheduleRefresh, { once: true });
+    });
 
     return () => ctx.revert();
   }, [delay]);

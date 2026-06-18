@@ -73,7 +73,8 @@ export default function ServicesHero() {
 
       <div
         ref={contentRef}
-        className="relative z-10 w-full max-w-3xl text-left pl-6 md:pl-10 lg:pl-16 xl:pl-20 pb-16 md:pb-24 pt-36 md:pt-44"
+        /* Added pr-6 right padding bounds to contain action clusters cleanly on ultra-narrow views */
+        className="relative z-10 w-full max-w-3xl text-left pl-6 pr-6 md:pl-10 md:pr-0 lg:pl-16 xl:pl-20 pb-16 md:pb-24 pt-36 md:pt-44"
       >
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -84,7 +85,7 @@ export default function ServicesHero() {
           Sound Wellness Therapies
         </motion.p>
 
-        <h1 className="font-display text-[clamp(2.75rem,7vw,5rem)] leading-[1.08] tracking-[-0.02em] text-white mb-5 md:mb-7 max-w-4xl hero-headline-contrast">
+        <h1 className="font-display text-[clamp(2.5rem,7vw,5rem)] leading-[1.08] tracking-[-0.02em] text-white mb-5 md:mb-7 max-w-4xl hero-headline-contrast">
           <HeroBrandTypewriter />
         </h1>
 
@@ -110,11 +111,11 @@ export default function ServicesHero() {
             delay: 0.55,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mt-8 md:mt-10 flex flex-col items-start sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-x-6 sm:gap-y-3"
+          className="mt-8 mt-10 flex flex-col items-start sm:flex-row sm:flex-wrap sm:items-center gap-4 sm:gap-x-6 sm:gap-y-3 w-full"
         >
           <a
             href="#services-offerings"
-            className="inline-flex w-full sm:w-auto items-center justify-start px-8 py-3 bg-[#F8F5F0] text-[#2B2B2B] font-sans text-[11px] font-semibold uppercase tracking-[0.15em] hover:bg-white transition-colors duration-300"
+            className="inline-flex w-full sm:w-auto items-center justify-center sm:justify-start px-8 py-3 bg-[#F8F5F0] text-[#2B2B2B] font-sans text-[11px] font-semibold uppercase tracking-[0.15em] hover:bg-white transition-colors duration-300"
           >
             Explore Offerings
           </a>
@@ -123,7 +124,7 @@ export default function ServicesHero() {
             onClick={() =>
               document.getElementById('individual')?.scrollIntoView({ behavior: 'smooth' })
             }
-            className="inline-flex items-center justify-start self-start px-8 font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-[#F8F5F0] border-b border-[#F8F5F0] pb-1 hover:text-white hover:border-white transition-all cursor-pointer hero-text-contrast"
+            className="inline-flex w-full sm:w-auto items-center justify-center sm:justify-start px-0 sm:px-8 font-sans text-[11px] font-semibold uppercase tracking-[0.15em] text-[#F8F5F0] border-b border-[#F8F5F0] pb-1 hover:text-white hover:border-white transition-all cursor-pointer hero-text-contrast"
           >
             View Individual Services
           </button>

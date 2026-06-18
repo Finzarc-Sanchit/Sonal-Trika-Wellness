@@ -16,10 +16,9 @@ import { TESTIMONIALS, VIDEO_TESTIMONIALS } from '../../data/testimonials';
 type TestimonialMode = 'written' | 'video';
 
 const toggleClass = (active: boolean) =>
-  `inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-sans text-[11px] font-semibold uppercase tracking-[0.15em] transition-all duration-300 cursor-pointer border ${
-    active
-      ? 'bg-[#2B2B2B] text-[#F8F5F0] border-[#2B2B2B]'
-      : 'bg-white/80 text-[#888888] border-[#D8C5A4]/60 hover:border-[#A55A42]/40'
+  `inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-sans text-[11px] font-semibold uppercase tracking-[0.15em] transition-all duration-300 cursor-pointer border ${active
+    ? 'bg-[#2B2B2B] text-[#F8F5F0] border-[#2B2B2B]'
+    : 'bg-white/80 text-[#888888] border-[#D8C5A4]/60 hover:border-[#A55A42]/40'
   }`;
 
 export default function TestimonialsSection() {
