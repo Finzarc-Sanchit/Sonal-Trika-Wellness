@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useRef, useCallback, type MouseEvent } from 'react';
+import { useRef, useCallback, Fragment, type MouseEvent } from 'react';
 import gsap from 'gsap';
 import { useReducedMotion } from 'motion/react';
 import type { ServiceCard } from '../../data/servicesData';
@@ -111,7 +111,7 @@ function LiquidGalleryItem({
       </h3>
 
       <div className="liquid-gallery-mask bg-gradient-to-t from-[#1A1A1A] via-[#1A1A1A]/40 to-transparent">
-        <p className="liquid-gallery-meta mb-4 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#878384]">
+        <p className="liquid-gallery-meta mb-4 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#a1999b]">
           {item.duration} · {item.category}
         </p>
         <h2 className="font-display text-[clamp(1.75rem,3vw,3rem)] leading-[1.05] text-[#F8F5F0] mb-6">
@@ -161,17 +161,17 @@ export default function LiquidGallery({
 }: LiquidGalleryProps) {
   return (
     <div
-      className={`liquid-gallery-container liquid-stretch ${
-        compact ? 'liquid-gallery-compact' : ''
-      }`}
+      className={`liquid-gallery-container liquid-stretch ${compact ? 'liquid-gallery-compact' : ''
+        }`}
     >
       {items.map((item) => (
-        <LiquidGalleryItem
-          key={item.id}
-          item={item}
-          onPrimaryCta={onPrimaryCta}
-          onSecondaryCta={onSecondaryCta}
-        />
+        <Fragment key={item.id}>
+          <LiquidGalleryItem
+            item={item}
+            onPrimaryCta={onPrimaryCta}
+            onSecondaryCta={onSecondaryCta}
+          />
+        </Fragment>
       ))}
     </div>
   );
