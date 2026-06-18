@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getLenisInstance } from './lenisInstance';
+
 const NAV_TARGET_CLASS = 'is-nav-target';
 const MAX_ATTEMPTS = 5;
 const RETRY_MS = 200;
@@ -53,19 +55,35 @@ export function scrollToHashTarget(id: string, attempt = 0) {
     return;
   }
 
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const lenis = getLenisInstance();
+  if (lenis) {
+    lenis.scrollTo(el, { offset: 0 });
+  } else {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 export function scrollToTestimonialsInstant(attempt = 0) {
-  const el = document.getElementById('testimonials');
-  if (!el) {
+  const target = document.getElementById('testimonials');
+  if (!target) {
     if (attempt < MAX_ATTEMPTS) {
       window.setTimeout(() => scrollToTestimonialsInstant(attempt + 1), RETRY_MS);
     }
     return;
   }
 
-  el.scrollIntoView({ behavior: 'auto', block: 'start' });
+  const lenis = getLenisInstance();
+  if (target && lenis) {
+    lenis.scrollTo(target, {
+      immediate: true,
+      force: true,
+    });
+    window.history.pushState(null, '', '#testimonials');
+    return;
+  }
+
+  target.scrollIntoView({ behavior: 'auto', block: 'start' });
+  window.history.pushState(null, '', '#testimonials');
 }
 
 export function parseInternalUrl(url: string): { pathname: string; hash: string } | null {

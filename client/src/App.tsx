@@ -18,8 +18,10 @@ import RetreatManagement from './pages/admin/RetreatManagement';
 
 import { scrollToHashTarget, scrollToTestimonialsInstant } from './utils/scrollToHash';
 import { markInternalNavigationToHome } from './utils/siteIntro';
+import { scrollLenisTo } from './utils/lenisInstance';
 import { isAdminAuthenticated, verifyAdminToken } from './api/auth';
 import { Loader2 } from 'lucide-react';
+import LenisScrollProvider from './components/providers/LenisScrollProvider';
 
 function HomeReturnTracker() {
   const { pathname } = useLocation();
@@ -40,7 +42,9 @@ function ScrollToTopOnNavigate() {
 
   useEffect(() => {
     if (!hash) {
-      window.scrollTo(0, 0);
+      if (!scrollLenisTo(0, { immediate: true })) {
+        window.scrollTo(0, 0);
+      }
     }
   }, [pathname, hash]);
 
@@ -137,27 +141,29 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <HomeReturnTracker />
-      <ScrollToTopOnNavigate />
-      <ScrollToHash />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/admin/login" element={<RedirectIfAdmin><AdminLogin /></RedirectIfAdmin>} />
+      <LenisScrollProvider>
+        <HomeReturnTracker />
+        <ScrollToTopOnNavigate />
+        <ScrollToHash />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/admin/login" element={<RedirectIfAdmin><AdminLogin /></RedirectIfAdmin>} />
 
-        {/* Strict authenticated-only admin workspace */}
-        <Route element={<RequireAdmin />}>
-          <Route path="/admin" element={<DashboardLayout />}>
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<Overview />} />
-            <Route path="messages" element={<ContactMessages />} />
-            <Route path="newsletter" element={<NewsletterList />} />
-            <Route path="retreats" element={<RetreatManagement />} />
+          {/* Strict authenticated-only admin workspace */}
+          <Route element={<RequireAdmin />}>
+            <Route path="/admin" element={<DashboardLayout />}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<Overview />} />
+              <Route path="messages" element={<ContactMessages />} />
+              <Route path="newsletter" element={<NewsletterList />} />
+              <Route path="retreats" element={<RetreatManagement />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
+        </Routes>
+      </LenisScrollProvider>
     </BrowserRouter>
   );
 }

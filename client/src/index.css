@@ -59,6 +59,19 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+html.lenis,
+body.lenis {
+  height: auto;
+}
+
+.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
 /* Keep card interiors stable at any browser zoom */
 .about-card-panel {
   contain: layout style;

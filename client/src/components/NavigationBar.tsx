@@ -38,6 +38,23 @@ function isInternalPath(url: string) {
   return url.startsWith('/') && !url.startsWith('//');
 }
 
+function handleTestimonialsNavClick(
+  e: MouseEvent<HTMLAnchorElement>,
+  location: ReturnType<typeof useLocation>,
+  navigate: ReturnType<typeof useNavigate>,
+  onAfterClick?: () => void,
+) {
+  e.preventDefault();
+  onAfterClick?.();
+
+  if (location.pathname !== '/') {
+    navigate({ pathname: '/', hash: '#testimonials' });
+    return;
+  }
+
+  scrollToTestimonialsInstant();
+}
+
 function NavChildLink({
   child,
   className,
@@ -105,13 +122,7 @@ function NavAnchor({
 
   const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
     if (link.label === 'Testimonials') {
-      e.preventDefault();
-      onClick?.();
-      if (location.pathname !== '/') {
-        navigate({ pathname: '/', hash: '#testimonials' });
-        return;
-      }
-      scrollToTestimonialsInstant();
+      handleTestimonialsNavClick(e, location, navigate, onClick);
       return;
     }
     onClick?.();
@@ -152,12 +163,7 @@ function DesktopNavMenuLink({
 
   const handleTestimonialsClick = (e: MouseEvent<HTMLAnchorElement>) => {
     if (link.label !== 'Testimonials') return;
-    e.preventDefault();
-    if (location.pathname !== '/') {
-      navigate({ pathname: '/', hash: '#testimonials' });
-      return;
-    }
-    scrollToTestimonialsInstant();
+    handleTestimonialsNavClick(e, location, navigate);
   };
 
   if (isInternalPath(link.url)) {

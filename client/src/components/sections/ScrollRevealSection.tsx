@@ -72,8 +72,9 @@ export default function ScrollRevealSection() {
       return;
     }
 
-    const scrollEnd = isMobileViewport() ? '+=120%' : '+=260%';
-    const endHold = isMobileViewport() ? 0.05 : 0.25;
+    /* Increased scroll tracking from 120% to 180% and end hold from 0.05 to 0.45 on mobile viewports */
+    const scrollEnd = isMobileViewport() ? '+=180%' : '+=260%';
+    const endHold = isMobileViewport() ? 0.45 : 0.25;
 
     const ctx = gsap.context(() => {
       gsap.set(morph, {
@@ -186,9 +187,6 @@ export default function ScrollRevealSection() {
           { opacity: 1, duration: 0.32, ease: 'sine.inOut' },
           '<0.06',
         )
-
-        // The instant the image is gone, the text plays on its own —
-        // no further scrolling required (reverses if scrolled back up)
         .add(() => {
           if (tl.scrollTrigger && tl.scrollTrigger.direction === -1) {
             textTl.reverse();
@@ -196,8 +194,6 @@ export default function ScrollRevealSection() {
             textTl.play();
           }
         })
-
-        // Small hold so the pin lasts while the text sequence runs
         .to({}, { duration: endHold });
 
     }, section);
@@ -299,7 +295,6 @@ export default function ScrollRevealSection() {
               </span>
             </div>
 
-            {/* Accent line with per-word animation */}
             <div className="reveal-line relative inline-flex flex-wrap items-center justify-center gap-x-3 md:gap-x-4 mt-1">
               <span
                 className="accent-glow absolute -inset-x-8 bottom-1 h-3 md:h-4 bg-[#A55A42]/20 rounded-full blur-md origin-left scale-x-0"
@@ -315,7 +310,6 @@ export default function ScrollRevealSection() {
               ))}
             </div>
 
-            {/* CTA below headline */}
             <Link
               to="/contact"
               className="reveal-cta inline-flex items-center gap-2 mt-5 md:mt-14 font-sans text-body-sm md:text-subheading font-medium tracking-tight text-[#2B2B2B] border-b border-[#A55A42]/40 pb-1 hover:text-[#A55A42] hover:border-[#A55A42] transition-colors duration-500 pointer-events-auto"

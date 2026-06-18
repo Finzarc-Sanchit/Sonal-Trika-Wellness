@@ -6,7 +6,7 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, Pause, Play, X } from 'lucide-react';
 import type { VideoTestimonial } from '../../data/testimonials';
 import {
   pauseAllBackgroundMedia,
@@ -22,6 +22,10 @@ interface VideoTestimonialPlayerProps {
   video: VideoTestimonial;
 }
 
+function formatVideoTime(time: number) {
+  return `${Math.floor(time / 60)}:${String(Math.floor(time % 60)).padStart(2, '0')}`;
+}
+
 const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
   video,
 }: VideoTestimonialPlayerProps) {
@@ -29,6 +33,9 @@ const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
   const loadStartRef = useRef(performance.now());
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useRenderCount('VideoTestimonialPlayer');
 
@@ -39,11 +46,14 @@ const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
     loadStartRef.current = performance.now();
     setReady(false);
     setError(false);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
 
     const startPlayback = () => {
       logVideoLoadTime(video.id, loadStartRef.current, 'canplay');
       setReady(true);
-      void el.play().catch(() => { });
+      void el.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
       watchDroppedFrames(el, video.id);
     };
 
@@ -65,10 +75,32 @@ const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
     };
   }, [video.id, video.videoSrc]);
 
+  const togglePlayPause = () => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    if (el.paused) {
+      void el.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    } else {
+      el.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    setCurrentTime(el.currentTime);
+  };
+
+  const handleLoadedMetadata = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    setDuration(el.duration || 0);
+  };
+
   return (
-    <div
-      className="relative mx-auto w-full bg-black flex items-center justify-center h-full"
-    >
+    <div className="relative mx-auto flex h-full w-full items-center justify-center bg-black">
       {!ready && !error && (
         <div className="absolute inset-0 flex items-center justify-center z-10">
           <Loader2 className="w-8 h-8 text-[#D8C5A4] animate-spin" aria-hidden />
@@ -87,11 +119,35 @@ const VideoTestimonialPlayer = memo(function VideoTestimonialPlayer({
       <video
         ref={videoRef}
         poster={video.posterSrc}
-        controls
+        controls={false}
         playsInline
-        className={`w-full h-full object-cover rounded-xl bg-black transition-opacity duration-300 md:rounded-none ${ready ? 'opacity-100' : 'opacity-0'
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        className={`h-full w-full rounded-xl bg-black object-cover transition-opacity duration-300 md:rounded-none ${ready ? 'opacity-100' : 'opacity-0'
           }`}
       />
+
+      {ready && !error && (
+        <div className="absolute inset-x-0 bottom-0 z-20 flex items-center gap-3 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-4 py-3">
+          <button
+            type="button"
+            onClick={togglePlayPause}
+            aria-label={isPlaying ? 'Pause video' : 'Play video'}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/25 bg-[#1A1A1A]/70 text-white transition-colors hover:bg-[#1A1A1A] cursor-pointer"
+          >
+            {isPlaying ? (
+              <Pause className="h-4 w-4" aria-hidden />
+            ) : (
+              <Play className="h-4 w-4" aria-hidden />
+            )}
+          </button>
+          <span className="font-sans text-xs tabular-nums text-white/90">
+            {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
+          </span>
+        </div>
+      )}
     </div>
   );
 });
@@ -156,30 +212,33 @@ function VideoTestimonialModal({ video, onClose }: VideoTestimonialModalProps) {
                 Reduced width layout (`max-w-[290px]`), combined with an aspect-ratio frame box 
                 (`aspect-[3/4]`), forces a clean, narrow vertical card shape fit.
               */}
-              <div className="relative rounded-2xl overflow-hidden bg-[#1A1A1A] shadow-2xl border border-[#F8F5F0]/10 aspect-[3/4] md:aspect-auto md:h-auto">
+              <div className="relative">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-[#1A1A1A]/70 hover:bg-[#1A1A1A] flex items-center justify-center transition-colors cursor-pointer border border-white/20"
+                  aria-label="Close video"
+                  className="absolute -top-12 -right-4 z-50 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#1A1A1A]/80 text-white transition-transform hover:scale-110 hover:bg-[#1A1A1A] md:-top-4 md:-right-12"
                 >
-                  <X className="w-4 h-4 text-white" />
+                  <X className="h-4 w-4" aria-hidden />
                 </button>
 
-                <VideoTestimonialPlayer key={video.id} video={video} />
+                <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-[#F8F5F0]/10 bg-[#1A1A1A] shadow-2xl md:aspect-auto md:h-auto">
+                  <VideoTestimonialPlayer key={video.id} video={video} />
 
-                <div className="hidden md:block p-6 md:p-8 bg-[#F8F5F0]">
-                  <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#888888] mb-2">
-                    Video Testimonial
-                  </p>
-                  <h3 className="font-display text-2xl tracking-tight text-[#2B2B2B] mb-1">
-                    {video.name}
-                  </h3>
-                  <p className="font-sans text-caption text-[#888888] mb-3">
-                    {video.designation}
-                  </p>
-                  <p className="font-display text-lg italic text-[#2B2B2B]/85 leading-relaxed">
-                    {video.headline}
-                  </p>
+                  <div className="hidden md:block p-6 md:p-8 bg-[#F8F5F0]">
+                    <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-[#888888] mb-2">
+                      Video Testimonial
+                    </p>
+                    <h3 className="font-display text-2xl tracking-tight text-[#2B2B2B] mb-1">
+                      {video.name}
+                    </h3>
+                    <p className="font-sans text-caption text-[#888888] mb-3">
+                      {video.designation}
+                    </p>
+                    <p className="font-display text-lg italic text-[#2B2B2B]/85 leading-relaxed">
+                      {video.headline}
+                    </p>
+                  </div>
                 </div>
               </div>
             </motion.div>
