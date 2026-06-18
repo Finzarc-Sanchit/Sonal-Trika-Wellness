@@ -4,6 +4,7 @@
  */
 
 import type { ServiceCard } from '../data/servicesData';
+import { toContactServiceSlug, type ContactServiceSlug } from '../data/contactServices';
 
 export const CONNECT_PANEL_EVENT = 'trika:open-connect-panel';
 
@@ -13,6 +14,8 @@ export interface ConnectPanelDetail {
   duration?: string;
   retreatDestination?: string;
   showRetreatPicker?: boolean;
+  /** Backend contact enum slug for pre-selected service submission */
+  serviceSlug?: ContactServiceSlug;
 }
 
 export function openConnectPanel(detail: ConnectPanelDetail) {
@@ -30,6 +33,7 @@ export function handleServicePrimaryCta(item: ServiceCard) {
     service: item.title,
     action: item.primaryCta,
     duration: item.duration,
+    serviceSlug: toContactServiceSlug(item.id) || undefined,
   });
 }
 
@@ -55,5 +59,6 @@ export function handleServiceSecondaryCta(
     service: item.title,
     action: item.secondaryCta ?? 'Learn More',
     duration: item.duration,
+    serviceSlug: toContactServiceSlug(item.id) || undefined,
   });
 }

@@ -1,16 +1,17 @@
 import apiClient from '../apiClient';
 import type { ApiResponse } from '../types/api';
 import { getApiErrorMessage } from '../utils/apiError';
+import type { ContactServiceSlug } from '../../data/contactServices';
 
 export type ContactStatus = 'new' | 'contacted' | 'in_progress' | 'completed';
 
 export interface Contact {
     _id: string;
-    fullName: string;
+    name: string;
     phone: string;
     email: string;
-    subject: string;
-    help: string;
+    service: ContactServiceSlug;
+    message: string;
     status: ContactStatus;
     createdAt: string;
     updatedAt: string;
@@ -20,6 +21,7 @@ export interface CreateContactData {
     phone: string;
     email: string;
     name: string;
+    service: ContactServiceSlug;
     message: string;
 }
 

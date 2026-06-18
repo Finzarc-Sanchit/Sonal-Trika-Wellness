@@ -516,7 +516,21 @@ html {
   }
 }
 
-/* Inline video playback on iOS; scoped to modal/lightbox players only */
+/* Form validation micro-alerts */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
 .video-player-contain {
   -webkit-playsinline: true;
   object-fit: contain;

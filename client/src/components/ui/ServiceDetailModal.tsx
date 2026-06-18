@@ -7,17 +7,21 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Clock, ArrowUpRight } from 'lucide-react';
 import type { ServiceCard } from '../../data/servicesData';
-import { openConnectPanel } from '../../utils/serviceCta';
 
 interface ServiceDetailModalProps {
   service: ServiceCard | null;
   onClose: () => void;
+  onEnquire?: (service: ServiceCard) => void;
 }
 
 const GOLD = '#D8C5A4';
 const TERRACOTTA = '#A55A42';
 
-export default function ServiceDetailModal({ service, onClose }: ServiceDetailModalProps) {
+export default function ServiceDetailModal({
+  service,
+  onClose,
+  onEnquire,
+}: ServiceDetailModalProps) {
   useEffect(() => {
     if (!service) return;
     const onKey = (e: KeyboardEvent) => {
@@ -33,12 +37,7 @@ export default function ServiceDetailModal({ service, onClose }: ServiceDetailMo
 
   const handleBook = () => {
     if (!service) return;
-    onClose();
-    openConnectPanel({
-      service: service.title,
-      action: service.primaryCta,
-      duration: service.duration,
-    });
+    onEnquire?.(service);
   };
 
   return (

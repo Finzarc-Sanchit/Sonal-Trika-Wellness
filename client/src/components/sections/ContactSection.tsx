@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useMemo, useState, useEffect, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   MapPin,
   Mail,
   Phone,
-  Send,
   Instagram,
   ExternalLink,
 } from 'lucide-react';
@@ -18,8 +17,8 @@ import SectionLabel from '../ui/SectionLabel';
 import ServiceTypewriterHeadline from '../ui/ServiceTypewriterHeadline';
 import { GradientDots } from '../ui/gradient-dots';
 import StardustBackground from '../ui/StardustBackground';
+import ContactForm, { type ContactFormData } from '../contact/ContactForm';
 import { TRIKA_CONTACT } from '../../data/companyContact';
-import { createContact } from '../../api/services/contactService';
 
 function FacebookIcon({ className }: { className?: string }) {
   return (
@@ -29,19 +28,12 @@ function FacebookIcon({ className }: { className?: string }) {
   );
 }
 
-export interface ContactFormData {
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-}
+export type { ContactFormData };
 
 interface ContactSectionProps {
+  initialService?: string;
   onSubmit?: (data: ContactFormData) => void;
 }
-
-type ContactFieldErrors = Partial<Record<keyof ContactFormData, string>>;
-type ContactTouched = Partial<Record<keyof ContactFormData, boolean>>;
 
 type ToastNotification = {
   id: string;
@@ -49,29 +41,9 @@ type ToastNotification = {
   message: string;
 };
 
-export default function ContactSection({ onSubmit }: ContactSectionProps) {
-  const [form, setForm] = useState<ContactFormData>({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-  });
-  const [submitted, setSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [touched, setTouched] = useState<ContactTouched>({});
+export default function ContactSection({ initialService, onSubmit }: ContactSectionProps) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
-
-  const trimmed = useMemo(
-    () => ({
-      name: form.name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      message: form.message.trim(),
-    }),
-    [form.email, form.message, form.name, form.phone],
-  );
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -81,26 +53,6 @@ export default function ContactSection({ onSubmit }: ContactSectionProps) {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  const validate = useMemo((): ContactFieldErrors => {
-    const next: ContactFieldErrors = {};
-
-    if (!trimmed.name) next.name = 'Please enter your name.';
-    if (!trimmed.email) next.email = 'Please enter your email.';
-    else if (!/^\S+@\S+\.\S+$/.test(trimmed.email))
-      next.email = 'Please enter a valid email address.';
-
-    if (!trimmed.phone) next.phone = 'Please enter your phone number.';
-    else if (trimmed.phone.replace(/[^\d]/g, '').length < 8)
-      next.phone = 'Please enter a valid phone number.';
-
-    if (!trimmed.message) next.message = 'Please enter a message.';
-    else if (trimmed.message.length < 10) next.message = 'Please add a little more detail.';
-
-    return next;
-  }, [trimmed.email, trimmed.message, trimmed.name, trimmed.phone]);
-
-  const isFormValid = useMemo(() => Object.keys(validate).length === 0, [validate]);
-
   const pushToast = (title: string, message: string) => {
     const id = Math.random().toString(36).slice(2, 9);
     setToasts((prev) => [...prev, { id, title, message }]);
@@ -109,39 +61,12 @@ export default function ContactSection({ onSubmit }: ContactSectionProps) {
     }, 4500);
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setSubmitAttempted(true);
-
-    if (!isFormValid || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      await createContact({
-        name: trimmed.name,
-        email: trimmed.email,
-        phone: trimmed.phone,
-        message: trimmed.message,
-      });
-      onSubmit?.(trimmed);
-      setSubmitted(true);
-      pushToast(
-        'Message received',
-        'Thank you for connecting. Your message has been received on your wellness journey.',
-      );
-      setTimeout(() => {
-        setSubmitted(false);
-        setForm({ name: '', email: '', phone: '', message: '' });
-        setTouched({});
-        setSubmitAttempted(false);
-      }, 3200);
-    } catch {
-      pushToast(
-        'Unable to send',
-        'We encountered an issue submitting your request. Please check your network connection or try again shortly.',
-      );
-    }
-    setIsSubmitting(false);
+  const handleSubmit = (data: ContactFormData) => {
+    onSubmit?.(data);
+    pushToast(
+      'Message received',
+      'Thank you for connecting. Your message has been received on your wellness journey.',
+    );
   };
 
   return (
@@ -178,7 +103,6 @@ export default function ContactSection({ onSubmit }: ContactSectionProps) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 mb-12 md:mb-16">
-          {/* Contact form */}
           <div className="lg:col-span-7">
             <div className="rounded-2xl border border-[#D8C5A4]/50 bg-[#F8F5F0] p-7 md:p-9">
               <h3 className="font-display text-2xl tracking-tight text-[#2B2B2B] mb-2">
@@ -188,183 +112,10 @@ export default function ContactSection({ onSubmit }: ContactSectionProps) {
                 Share your details and we&apos;ll respond within 24 hours.
               </p>
 
-              {submitted ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="py-16 text-center"
-                >
-                  <div className="w-14 h-14 rounded-full bg-[#7A8B6F]/15 flex items-center justify-center mx-auto mb-4">
-                    <Send className="w-6 h-6 text-[#7A8B6F]" />
-                  </div>
-                  <p className="font-display text-xl text-[#2B2B2B]">Thank you</p>
-                  <p className="font-sans text-caption text-[#888888] mt-1">
-                    We&apos;ll be in touch shortly.
-                  </p>
-                </motion.div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div>
-                      <label
-                        htmlFor="contact-name"
-                        className="font-sans text-caption font-medium uppercase tracking-wider text-[#888888] mb-2 block"
-                      >
-                        Name <span className="text-[#A55A42]">*</span>
-                      </label>
-                      <input
-                        id="contact-name"
-                        required
-                        value={form.name}
-                        onChange={(e) =>
-                          setForm((p) => ({ ...p, name: e.target.value }))
-                        }
-                        onBlur={() => setTouched((p) => ({ ...p, name: true }))}
-                        aria-invalid={Boolean((touched.name || submitAttempted) && validate.name)}
-                        aria-describedby={
-                          (touched.name || submitAttempted) && validate.name
-                            ? 'contact-name-error'
-                            : undefined
-                        }
-                        className={`w-full px-4 py-3.5 rounded-xl bg-white border font-sans text-sm text-[#2B2B2B] focus:outline-none focus:ring-2 transition-colors ${
-                          (touched.name || submitAttempted) && validate.name
-                            ? 'border-red-400/70 focus:border-red-400/70 focus:ring-red-500/10'
-                            : 'border-[#D8C5A4]/50 focus:border-[#8C82B6]/50 focus:ring-[#8C82B6]/10'
-                        }`}
-                        placeholder="Your full name"
-                      />
-                      {(touched.name || submitAttempted) && validate.name && (
-                        <p id="contact-name-error" className="mt-2 font-sans text-caption text-red-500">
-                          {validate.name}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="contact-email"
-                        className="font-sans text-caption font-medium uppercase tracking-wider text-[#888888] mb-2 block"
-                      >
-                        Email <span className="text-[#A55A42]">*</span>
-                      </label>
-                      <input
-                        id="contact-email"
-                        type="email"
-                        required
-                        value={form.email}
-                        onChange={(e) =>
-                          setForm((p) => ({ ...p, email: e.target.value }))
-                        }
-                        onBlur={() => setTouched((p) => ({ ...p, email: true }))}
-                        aria-invalid={Boolean((touched.email || submitAttempted) && validate.email)}
-                        aria-describedby={
-                          (touched.email || submitAttempted) && validate.email
-                            ? 'contact-email-error'
-                            : undefined
-                        }
-                        className={`w-full px-4 py-3.5 rounded-xl bg-white border font-sans text-sm text-[#2B2B2B] focus:outline-none focus:ring-2 transition-colors ${
-                          (touched.email || submitAttempted) && validate.email
-                            ? 'border-red-400/70 focus:border-red-400/70 focus:ring-red-500/10'
-                            : 'border-[#D8C5A4]/50 focus:border-[#8C82B6]/50 focus:ring-[#8C82B6]/10'
-                        }`}
-                        placeholder="you@email.com"
-                      />
-                      {(touched.email || submitAttempted) && validate.email && (
-                        <p id="contact-email-error" className="mt-2 font-sans text-caption text-red-500">
-                          {validate.email}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="contact-phone"
-                      className="font-sans text-caption font-medium uppercase tracking-wider text-[#888888] mb-2 block"
-                    >
-                      Phone <span className="text-[#A55A42]">*</span>
-                    </label>
-                    <input
-                      id="contact-phone"
-                      type="tel"
-                      required
-                      value={form.phone}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, phone: e.target.value }))
-                      }
-                      onBlur={() => setTouched((p) => ({ ...p, phone: true }))}
-                      aria-invalid={Boolean((touched.phone || submitAttempted) && validate.phone)}
-                      aria-describedby={
-                        (touched.phone || submitAttempted) && validate.phone
-                          ? 'contact-phone-error'
-                          : undefined
-                      }
-                      className={`w-full px-4 py-3.5 rounded-xl bg-white border font-sans text-sm text-[#2B2B2B] focus:outline-none focus:ring-2 transition-colors ${
-                        (touched.phone || submitAttempted) && validate.phone
-                          ? 'border-red-400/70 focus:border-red-400/70 focus:ring-red-500/10'
-                          : 'border-[#D8C5A4]/50 focus:border-[#8C82B6]/50 focus:ring-[#8C82B6]/10'
-                      }`}
-                      placeholder="+91 00000 00000"
-                    />
-                    {(touched.phone || submitAttempted) && validate.phone && (
-                      <p id="contact-phone-error" className="mt-2 font-sans text-caption text-red-500">
-                        {validate.phone}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="contact-message"
-                      className="font-sans text-caption font-medium uppercase tracking-wider text-[#888888] mb-2 block"
-                    >
-                      Message <span className="text-[#A55A42]">*</span>
-                    </label>
-                    <textarea
-                      id="contact-message"
-                      required
-                      rows={4}
-                      value={form.message}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, message: e.target.value }))
-                      }
-                      onBlur={() => setTouched((p) => ({ ...p, message: true }))}
-                      aria-invalid={Boolean((touched.message || submitAttempted) && validate.message)}
-                      aria-describedby={
-                        (touched.message || submitAttempted) && validate.message
-                          ? 'contact-message-error'
-                          : undefined
-                      }
-                      className={`w-full px-4 py-3.5 rounded-xl bg-white border font-sans text-sm text-[#2B2B2B] focus:outline-none focus:ring-2 transition-colors resize-none ${
-                        (touched.message || submitAttempted) && validate.message
-                          ? 'border-red-400/70 focus:border-red-400/70 focus:ring-red-500/10'
-                          : 'border-[#D8C5A4]/50 focus:border-[#8C82B6]/50 focus:ring-[#8C82B6]/10'
-                      }`}
-                      placeholder="Tell us what you're looking for..."
-                    />
-                    {(touched.message || submitAttempted) && validate.message && (
-                      <p id="contact-message-error" className="mt-2 font-sans text-caption text-red-500">
-                        {validate.message}
-                      </p>
-                    )}
-                  </div>
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    disabled={!isFormValid || isSubmitting}
-                    className={`inline-flex items-center gap-2 bg-[#A55A42] text-white font-sans text-[11px] font-semibold uppercase tracking-[0.15em] rounded-full px-8 py-3.5 transition-colors duration-400 cursor-pointer ${
-                      isSubmitting || !isFormValid
-                        ? 'opacity-70 cursor-not-allowed'
-                        : 'hover:bg-[#8C82B6]'
-                    }`}
-                  >
-                    {isSubmitting ? 'Sending…' : 'Send Message'}
-                    <Send className="w-4 h-4" />
-                  </motion.button>
-                </form>
-              )}
+              <ContactForm initialService={initialService} onSubmit={handleSubmit} />
             </div>
           </div>
 
-          {/* Studio details */}
           <div className="lg:col-span-5 flex flex-col gap-6">
             <div className="rounded-2xl border border-[#D8C5A4]/50 bg-[#F8F5F0] p-7 md:p-8">
               <h3 className="font-display text-2xl tracking-tight text-[#2B2B2B] mb-6">
@@ -468,7 +219,6 @@ export default function ContactSection({ onSubmit }: ContactSectionProps) {
           </div>
         </div>
 
-        {/* Map */}
         <div className="rounded-2xl overflow-hidden border border-[#D8C5A4]/50 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
           <iframe
             title="Trika Wellness studio location — Raheja Classique, Andheri West, Mumbai"

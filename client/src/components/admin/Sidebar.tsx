@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Mail,
+  MapPin,
   Users,
   X,
   type LucideIcon,
@@ -18,7 +19,7 @@ import { clearAdminToken } from '../../api/auth';
 export interface SidebarItem {
   name: string;
   path: string;
-  icon: 'LayoutDashboard' | 'Mail' | 'Users';
+  icon: 'LayoutDashboard' | 'Mail' | 'Users' | 'MapPin';
   countKey?: 'unreadContacts';
 }
 
@@ -31,12 +32,14 @@ export const sidebarItems: SidebarItem[] = [
     countKey: 'unreadContacts',
   },
   { name: 'Newsletter List', path: '/admin/newsletter', icon: 'Users' },
+  { name: 'Retreat Bookings', path: '/admin/retreats', icon: 'MapPin' },
 ];
 
 const iconMap: Record<SidebarItem['icon'], LucideIcon> = {
   LayoutDashboard,
   Mail,
   Users,
+  MapPin,
 };
 
 export type SidebarCounts = Partial<Record<'unreadContacts', number>>;

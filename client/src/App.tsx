@@ -14,6 +14,7 @@ import DashboardLayout from './pages/admin/DashboardLayout';
 import Overview from './pages/admin/Overview';
 import ContactMessages from './pages/admin/ContactMessages';
 import NewsletterList from './pages/admin/NewsletterList';
+import RetreatManagement from './pages/admin/RetreatManagement';
 
 import { scrollToHashTarget } from './utils/scrollToHash';
 import { isAdminAuthenticated, verifyAdminToken } from './api/auth';
@@ -131,6 +132,7 @@ export default function App() {
             <Route path="dashboard" element={<Overview />} />
             <Route path="messages" element={<ContactMessages />} />
             <Route path="newsletter" element={<NewsletterList />} />
+            <Route path="retreats" element={<RetreatManagement />} />
           </Route>
         </Route>
       </Routes>

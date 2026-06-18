@@ -48,6 +48,7 @@ export interface NewsletterResponse {
 export interface NewsletterSubscribeResponse {
     success: boolean;
     message: string;
+    data?: NewsletterSubscriber;
 }
 
 export interface NewsletterCampaignPayload {
@@ -114,6 +115,19 @@ export const newsletterService = {
         }
     },
 
+    /** POST /api/v1/newsletter/unsubscribe */
+    unsubscribe: async (data: CreateNewsletterData): Promise<ApiResponse> => {
+        try {
+            const response = await apiClient.post<ApiResponse>(
+                `${NEWSLETTER_PATH}/unsubscribe`,
+                data,
+            );
+            return response.data;
+        } catch (error) {
+            throw new Error(getApiErrorMessage(error, 'Failed to unsubscribe'));
+        }
+    },
+
     deleteSubscriber: async (id: string): Promise<ApiResponse> => {
         try {
             const response = await apiClient.delete<ApiResponse>(`${NEWSLETTER_PATH}/${id}`);
@@ -141,7 +155,7 @@ export const newsletterService = {
     },
 };
 
-export const { subscribe, getSubscribers, deleteSubscriber, sendCampaign } = newsletterService;
+export const { subscribe, getSubscribers, unsubscribe, deleteSubscriber, sendCampaign } = newsletterService;
 
 /** Subscribe to newsletter — POST /api/v1/newsletter */
 export const createNewsletter = subscribe;

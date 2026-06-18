@@ -3,20 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
-  ArrowLeft,
-  CheckCircle2,
+  ArrowDownUp,
   Loader2,
   MailOpen,
+  Search,
   Trash2,
+  X,
 } from 'lucide-react';
 import {
   contactService,
   type Contact,
   type ContactStatus,
 } from '../../api/services/contactService';
+import { formatContactService } from '../../data/contactServices';
 import { useAdminLayout } from './DashboardLayout';
+
+const STATUS_OPTIONS: { value: ContactStatus; label: string }[] = [
+  { value: 'new', label: 'New' },
+  { value: 'contacted', label: 'Contacted' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+];
+
+type StatusFilter = ContactStatus | 'all';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -28,19 +40,19 @@ function formatDate(iso: string) {
 function statusLabel(status: ContactStatus) {
   const map: Record<ContactStatus, string> = {
     new: 'New',
-    contacted: 'Read',
+    contacted: 'Contacted',
     in_progress: 'In Progress',
-    completed: 'Resolved',
+    completed: 'Completed',
   };
   return map[status];
 }
 
 function statusTone(status: ContactStatus) {
   const map: Record<ContactStatus, string> = {
-    new: 'bg-[#A55A42]/10 text-[#A55A42]',
-    contacted: 'bg-[#8C82B6]/12 text-[#5B4A8A]',
-    in_progress: 'bg-amber-500/12 text-amber-700',
-    completed: 'bg-emerald-500/12 text-emerald-700',
+    new: 'bg-[#D8C5A4]/25 text-[#8B7355] border border-[#D8C5A4]/50',
+    contacted: 'bg-[#8C82B6]/12 text-[#5B4A8A] border border-[#8C82B6]/25',
+    in_progress: 'bg-amber-500/12 text-amber-700 border border-amber-500/20',
+    completed: 'bg-emerald-500/12 text-emerald-700 border border-emerald-500/20',
   };
   return map[status];
 }
@@ -63,29 +75,86 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+interface MessageModalProps {
+  contact: Contact | null;
+  onClose: () => void;
+}
+
+function MessageModal({ contact, onClose }: MessageModalProps) {
+  return (
+    <AnimatePresence>
+      {contact && (
+        <motion.div
+          key="message-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A1A]/40"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="message-modal-title"
+            className="w-full max-w-lg rounded-2xl border border-[#D8C5A4]/45 bg-white shadow-[0_24px_64px_rgba(0,0,0,0.12)] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#D8C5A4]/25">
+              <div className="min-w-0">
+                <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-[#888888]">
+                  Full message
+                </p>
+                <h2 id="message-modal-title" className="font-display text-lg text-[#2B2B2B] truncate">
+                  {contact.name}
+                </h2>
+                <p className="font-sans text-caption text-[#888888] truncate">
+                  {formatContactService(contact.service)} · {contact.email}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="shrink-0 w-9 h-9 rounded-xl hover:bg-[#2B2B2B]/5 flex items-center justify-center cursor-pointer"
+                aria-label="Close message"
+              >
+                <X className="w-4 h-4 text-[#2B2B2B]/70" />
+              </button>
+            </div>
+            <div className="px-5 py-4 max-h-[min(60vh,420px)] overflow-y-auto">
+              <p className="font-sans text-body-sm text-[#2B2B2B]/85 leading-relaxed whitespace-pre-wrap">
+                {contact.message || 'No message body.'}
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function ContactMessages() {
   const { refreshSidebarCounts } = useAdminLayout();
 
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [rowActionId, setRowActionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const selected = contacts.find((c) => c._id === selectedId) ?? null;
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [sortNewestFirst, setSortNewestFirst] = useState(true);
+  const [expandedContact, setExpandedContact] = useState<Contact | null>(null);
 
   const loadContacts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await contactService.getContacts({ page: 1, limit: 100 });
-      const list = res.data.contacts;
-      setContacts(list);
-      setSelectedId((prev) => {
-        if (prev && list.some((c) => c._id === prev)) return prev;
-        const desktop = window.matchMedia('(min-width: 1024px)').matches;
-        return desktop ? (list[0]?._id ?? null) : null;
-      });
+      const res = await contactService.getContacts({ page: 1, limit: 200 });
+      setContacts(res.data.contacts);
     } catch {
       setError('Failed to load contact messages.');
     } finally {
@@ -97,53 +166,73 @@ export default function ContactMessages() {
     void loadContacts();
   }, [loadContacts]);
 
-  const handleMarkRead = async () => {
-    if (!selected) return;
-    setActionLoading(true);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  const filteredContacts = useMemo(() => {
+    const query = debouncedSearchQuery.trim().toLowerCase();
+
+    let result = contacts.filter((contact) => {
+      if (statusFilter !== 'all' && contact.status !== statusFilter) return false;
+      if (!query) return true;
+
+      const haystack = [
+        contact.name,
+        contact.email,
+        contact.message,
+        contact.phone,
+        formatContactService(contact.service),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(query);
+    });
+
+    result = [...result].sort((a, b) => {
+      const aTime = new Date(a.createdAt).getTime();
+      const bTime = new Date(b.createdAt).getTime();
+      return sortNewestFirst ? bTime - aTime : aTime - bTime;
+    });
+
+    return result;
+  }, [contacts, statusFilter, debouncedSearchQuery, sortNewestFirst]);
+
+  const handleStatusChange = async (id: string, nextStatus: ContactStatus) => {
+    const current = contacts.find((c) => c._id === id);
+    if (!current || current.status === nextStatus) return;
+
+    setRowActionId(id);
+    setError(null);
     try {
-      const res = await contactService.updateContact(selected._id, { status: 'contacted' });
-      setContacts((prev) =>
-        prev.map((c) => (c._id === selected._id ? res.data : c)),
-      );
+      const res = await contactService.updateContact(id, { status: nextStatus });
+      setContacts((prev) => prev.map((c) => (c._id === id ? res.data : c)));
       await refreshSidebarCounts();
     } catch {
       setError('Failed to update message status.');
     } finally {
-      setActionLoading(false);
+      setRowActionId(null);
     }
   };
 
-  const handleMarkResolved = async () => {
-    if (!selected) return;
-    setActionLoading(true);
-    try {
-      const res = await contactService.updateContact(selected._id, { status: 'completed' });
-      setContacts((prev) =>
-        prev.map((c) => (c._id === selected._id ? res.data : c)),
-      );
-      await refreshSidebarCounts();
-    } catch {
-      setError('Failed to resolve message.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Delete the message from ${name}? This cannot be undone.`)) return;
 
-  const handleDelete = async () => {
-    if (!selected) return;
-    if (!window.confirm('Delete this contact message permanently?')) return;
-
-    setActionLoading(true);
+    setRowActionId(id);
+    setError(null);
     try {
-      await contactService.deleteContact(selected._id);
-      const remaining = contacts.filter((c) => c._id !== selected._id);
-      setContacts(remaining);
-      setSelectedId(remaining[0]?._id ?? null);
+      await contactService.deleteContact(id);
+      setContacts((prev) => prev.filter((c) => c._id !== id));
       await refreshSidebarCounts();
     } catch {
       setError('Failed to delete message.');
     } finally {
-      setActionLoading(false);
+      setRowActionId(null);
     }
   };
 
@@ -151,187 +240,196 @@ export default function ContactMessages() {
     return <LoadingFrame label="Loading contact messages" />;
   }
 
-  if (!contacts.length) {
-    return (
-      <div className="max-w-4xl">
-        {error && (
-          <div role="alert" className="mb-4 rounded-2xl border border-red-500/15 bg-red-500/5 px-4 py-3">
-            <p className="font-sans text-caption text-red-600">{error}</p>
-          </div>
-        )}
-        <EmptyState message="No contact messages yet. Submissions from the website will appear here." />
-      </div>
-    );
-  }
-
   return (
-    <div className="h-[calc(100vh-5.5rem)] md:h-[calc(100vh-6rem)] flex flex-col">
+    <div className="space-y-4 max-w-7xl">
       {error && (
-        <div role="alert" className="mb-4 rounded-2xl border border-red-500/15 bg-red-500/5 px-4 py-3 shrink-0">
+        <div role="alert" className="rounded-2xl border border-red-500/15 bg-red-500/5 px-4 py-3">
           <p className="font-sans text-caption text-red-600">{error}</p>
         </div>
       )}
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(280px,360px)_1fr] gap-4">
-        {/* Inbox list */}
-        <div
-          className={`rounded-2xl border border-[#D8C5A4]/40 bg-white/85 backdrop-blur-xl overflow-hidden flex flex-col min-h-0 shadow-[0_10px_28px_rgba(0,0,0,0.06)] ${
-            selectedId ? 'hidden lg:flex' : 'flex'
-          }`}
-        >
-          <div className="px-4 py-3 border-b border-[#D8C5A4]/25 shrink-0">
-            <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
-              Inbox · {contacts.length}
-            </p>
+      {/* Controls panel */}
+      <div className="rounded-2xl border border-[#D8C5A4]/40 bg-white/85 backdrop-blur-xl p-4 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,180px)_1fr_auto] gap-3">
+          <div>
+            <label
+              htmlFor="status-filter"
+              className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-[#888888] mb-1.5 block"
+            >
+              Status
+            </label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="w-full rounded-xl border border-[#D8C5A4]/45 bg-white px-3 py-2.5 font-sans text-sm text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#8C82B6]/10 focus:border-[#8C82B6]/55 cursor-pointer"
+            >
+              <option value="all">All Statuses</option>
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
-          <ul className="flex-1 overflow-y-auto divide-y divide-[#D8C5A4]/20">
-            {contacts.map((contact) => {
-              const isActive = contact._id === selectedId;
-              return (
-                <li key={contact._id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(contact._id)}
-                    className={`w-full text-left px-4 py-3.5 transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-[#D8C5A4]/18 border-l-2 border-[#D8C5A4]'
-                        : 'hover:bg-[#F8F5F0] border-l-2 border-transparent'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-sans text-sm font-medium text-[#2B2B2B] truncate">
-                        {contact.fullName || 'Unknown'}
-                      </p>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 font-sans text-[10px] font-semibold ${statusTone(contact.status)}`}
-                      >
-                        {statusLabel(contact.status)}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 font-sans text-caption text-[#888888] truncate">
-                      {contact.email}
-                    </p>
-                    <p className="mt-1 font-sans text-[11px] text-[#2B2B2B]/50 line-clamp-1">
-                      {contact.help || contact.subject}
-                    </p>
-                    <p className="mt-1 font-sans text-[10px] text-[#888888]">
-                      {formatDate(contact.createdAt)}
-                    </p>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
 
-        {/* Detail inspector */}
-        <div
-          className={`rounded-2xl border border-[#D8C5A4]/40 bg-white/85 backdrop-blur-xl overflow-hidden flex flex-col min-h-0 shadow-[0_10px_28px_rgba(0,0,0,0.06)] ${
-            selectedId ? 'flex' : 'hidden lg:flex'
-          }`}
-        >
-          {selected ? (
-            <>
-              <div className="px-4 sm:px-6 py-4 border-b border-[#D8C5A4]/25 flex items-center gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(null)}
-                  className="lg:hidden w-9 h-9 rounded-xl border border-[#D8C5A4]/40 bg-white flex items-center justify-center cursor-pointer"
-                  aria-label="Back to inbox"
-                >
-                  <ArrowLeft className="w-4 h-4 text-[#2B2B2B]" />
-                </button>
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-display text-lg text-[#2B2B2B] truncate">
-                    {selected.fullName}
-                  </h2>
-                  <p className="font-sans text-caption text-[#888888] truncate">{selected.email}</p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 font-sans text-[10px] font-semibold ${statusTone(selected.status)}`}
-                >
-                  {statusLabel(selected.status)}
-                </span>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="rounded-xl bg-[#F8F5F0] border border-[#D8C5A4]/35 px-4 py-3">
-                    <p className="font-sans text-[10px] uppercase tracking-wider text-[#888888]">Phone</p>
-                    <p className="mt-1 font-sans text-sm text-[#2B2B2B]/80">{selected.phone || '—'}</p>
-                  </div>
-                  <div className="rounded-xl bg-[#F8F5F0] border border-[#D8C5A4]/35 px-4 py-3">
-                    <p className="font-sans text-[10px] uppercase tracking-wider text-[#888888]">Received</p>
-                    <p className="mt-1 font-sans text-sm text-[#2B2B2B]/80">{formatDate(selected.createdAt)}</p>
-                  </div>
-                </div>
-
-                {selected.subject && (
-                  <div>
-                    <p className="font-sans text-[10px] uppercase tracking-wider text-[#888888] mb-1.5">Subject</p>
-                    <p className="font-sans text-sm text-[#2B2B2B]/80">{selected.subject}</p>
-                  </div>
-                )}
-
-                <div>
-                  <p className="font-sans text-[10px] uppercase tracking-wider text-[#888888] mb-1.5">Message</p>
-                  <div className="rounded-xl bg-[#F8F5F0] border border-[#D8C5A4]/35 px-4 py-4">
-                    <p className="font-sans text-body-sm text-[#2B2B2B]/80 leading-relaxed whitespace-pre-wrap">
-                      {selected.help || 'No message body.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="px-4 sm:px-6 py-4 border-t border-[#D8C5A4]/25 flex flex-wrap gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => void handleMarkRead()}
-                  disabled={actionLoading || selected.status === 'contacted' || selected.status === 'completed'}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#D8C5A4]/45 bg-white px-4 py-2.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-[#2B2B2B]/75 hover:bg-[#F8F5F0] hover:text-[#A55A42] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {actionLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <MailOpen className="w-3.5 h-3.5" />
-                  )}
-                  Mark Read
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleMarkResolved()}
-                  disabled={actionLoading || selected.status === 'completed'}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#8C82B6]/35 bg-[#8C82B6]/10 px-4 py-2.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-[#5B4A8A] hover:bg-[#8C82B6]/15 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {actionLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  )}
-                  Mark Resolved
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDelete()}
-                  disabled={actionLoading}
-                  className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/5 px-4 py-2.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50 ml-auto"
-                >
-                  {actionLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-3.5 h-3.5" />
-                  )}
-                  Delete
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center p-6">
-              <p className="font-sans text-body-sm text-[#888888]">Select a message to inspect</p>
+          <div>
+            <label
+              htmlFor="contact-search"
+              className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-[#888888] mb-1.5 block"
+            >
+              Search
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888888]" />
+              <input
+                id="contact-search"
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Name, email, or message…"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#D8C5A4]/45 bg-white font-sans text-sm text-[#2B2B2B] placeholder:text-[#2B2B2B]/30 focus:outline-none focus:ring-2 focus:ring-[#8C82B6]/10 focus:border-[#8C82B6]/55"
+              />
             </div>
-          )}
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => setSortNewestFirst((prev) => !prev)}
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-[#D8C5A4]/45 bg-white px-4 py-2.5 font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2B2B2B]/80 hover:bg-[#F8F5F0] hover:text-[#A55A42] transition-colors cursor-pointer"
+            >
+              <ArrowDownUp className="w-3.5 h-3.5" />
+              {sortNewestFirst ? 'Newest first' : 'Oldest first'}
+            </button>
+          </div>
         </div>
+
+        <p className="mt-3 font-sans text-caption text-[#888888]">
+          {filteredContacts.length} of {contacts.length} message{contacts.length === 1 ? '' : 's'}
+        </p>
       </div>
+
+      {contacts.length === 0 ? (
+        <EmptyState message="No contact messages yet. Submissions from the website will appear here." />
+      ) : filteredContacts.length === 0 ? (
+        <EmptyState message="No messages match your current filters. Try adjusting search or status." />
+      ) : (
+        <div className="rounded-2xl border border-[#D8C5A4]/40 bg-white/85 backdrop-blur-xl overflow-hidden shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1040px]">
+              <thead>
+                <tr className="border-b border-[#D8C5A4]/25 bg-[#F8F5F0]">
+                  <th className="px-4 py-3.5 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
+                    Client
+                  </th>
+                  <th className="px-4 py-3.5 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
+                    Phone
+                  </th>
+                  <th className="px-4 py-3.5 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
+                    Service
+                  </th>
+                  <th className="px-4 py-3.5 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
+                    Message
+                  </th>
+                  <th className="px-4 py-3.5 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
+                    Received
+                  </th>
+                  <th className="px-4 py-3.5 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
+                    Status
+                  </th>
+                  <th className="px-4 py-3.5 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888888]">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#D8C5A4]/20">
+                {filteredContacts.map((contact) => {
+                  const isRowBusy = rowActionId === contact._id;
+
+                  return (
+                    <tr key={contact._id} className="hover:bg-[#F8F5F0]/80 transition-colors">
+                      <td className="px-4 py-3.5">
+                        <p className="font-sans text-sm font-medium text-[#2B2B2B]">
+                          {contact.name || 'Unknown'}
+                        </p>
+                        <p className="font-sans text-caption text-[#888888] lowercase">
+                          {contact.email}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3.5 font-sans text-sm text-[#2B2B2B]/80 whitespace-nowrap">
+                        {contact.phone || '—'}
+                      </td>
+                      <td className="px-4 py-3.5 font-sans text-sm text-[#2B2B2B]/80 whitespace-nowrap max-w-[180px]">
+                        <span className="block truncate" title={formatContactService(contact.service)}>
+                          {contact.service ? formatContactService(contact.service) : '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 max-w-xs">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedContact(contact)}
+                          className="w-full text-left font-sans text-sm text-[#2B2B2B]/75 truncate max-w-xs hover:text-[#A55A42] transition-colors cursor-pointer"
+                          title="View full message"
+                        >
+                          {contact.message || '—'}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3.5 font-sans text-caption text-[#888888] whitespace-nowrap">
+                        {formatDate(contact.createdAt)}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 font-sans text-[10px] font-semibold uppercase tracking-wider ${statusTone(contact.status)}`}
+                        >
+                          {statusLabel(contact.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={contact.status}
+                            disabled={isRowBusy}
+                            onChange={(e) =>
+                              void handleStatusChange(
+                                contact._id,
+                                e.target.value as ContactStatus,
+                              )
+                            }
+                            className="rounded-lg border border-[#D8C5A4]/45 bg-white px-2 py-1.5 font-sans text-xs text-[#2B2B2B] focus:outline-none focus:ring-2 focus:ring-[#8C82B6]/10 focus:border-[#8C82B6]/55 cursor-pointer disabled:opacity-50"
+                            aria-label={`Update status for ${contact.name}`}
+                          >
+                            {STATUS_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(contact._id, contact.name)}
+                            disabled={isRowBusy}
+                            className="w-8 h-8 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center justify-center text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                            aria-label={`Delete message from ${contact.name}`}
+                          >
+                            {isRowBusy ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <MessageModal contact={expandedContact} onClose={() => setExpandedContact(null)} />
     </div>
   );
 }

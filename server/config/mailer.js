@@ -51,19 +51,62 @@ const buildDataTableHtml = (rows) => {
     </table>`;
 };
 
+const SERVICE_LABELS = {
+    'chakra-therapy': 'Chakra Therapy',
+    'ocean-therapy': 'Ocean Therapy',
+    'clinical-protocols': 'Clinical Protocols',
+    'corporate-wellness': 'Corporate Wellness',
+    'retreats-and-festivals': 'Retreats & Festivals',
+    'new-moon-full-moon-sound-bath': 'New Moon / Full Moon Sound Bath',
+    'beginner-sound-healing-workshop': "Beginners' Sound Healing Workshop",
+    'gong-and-bowl-learning-modules': 'Gong and Bowl Learning Modules',
+};
+
 const buildContactTableHtml = (contact) => {
     const doc = contact.toObject ? contact.toObject() : contact;
     const name = doc.name ?? doc.fullName;
     const message = doc.message ?? doc.help;
+    const serviceLabel = SERVICE_LABELS[doc.service] ?? doc.service;
 
     return buildDataTableHtml([
         ['Name', name],
         ['Phone', doc.phone],
         ['Email', doc.email],
+        ['Service', serviceLabel || '—'],
         ['Message', message || '—'],
         ['Status', doc.status || 'new'],
         ['Submitted At', doc.createdAt ? formatDateIST(doc.createdAt) : '—'],
     ]);
+};
+
+const RETREAT_LOCATION_LABELS = {
+    rishikesh: 'Rishikesh',
+    jaisalmer: 'Jaisalmer',
+    'sri-lanka': 'Sri Lanka',
+    gangtok: 'Gangtok',
+};
+
+const formatRetreatLocation = (location) =>
+    RETREAT_LOCATION_LABELS[location] ?? capitalizeWords(String(location || '').replace(/-/g, ' '));
+
+const buildRetreatTableHtml = (retreat) => {
+    const doc = retreat.toObject ? retreat.toObject() : retreat;
+    const details = doc.details ?? '';
+
+    return buildDataTableHtml([
+        ['Name', doc.name],
+        ['Phone', doc.phone],
+        ['Email', doc.email],
+        ['Destination', formatRetreatLocation(doc.location)],
+        ['Status', doc.status || 'inquiry'],
+        ['Submitted At', doc.createdAt ? formatDateIST(doc.createdAt) : '—'],
+    ]) + (details
+        ? `
+        <div style="margin-top:20px;font-family:Arial,sans-serif;">
+          <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.04em;">Guest message</p>
+          <p style="margin:0;font-size:14px;line-height:1.65;color:#111827;white-space:pre-wrap;">${escapeHtml(details)}</p>
+        </div>`
+        : '');
 };
 
 const loadTemplate = (filename) => {
@@ -187,6 +230,24 @@ const emailTemplates = {
       `,
         };
     },
+
+    retreatAdminNotification: (data) => {
+        const retreat = data.retreat;
+        const tableHtml = buildRetreatTableHtml(retreat);
+        const displayName = retreat?.name ?? 'New retreat inquiry';
+        const destination = formatRetreatLocation(retreat?.location);
+
+        return {
+            subject: `New Retreat Inquiry — ${destination} — ${displayName}`,
+            html: `
+        <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:20px;">
+          <h2 style="color:#1f2937;margin:0 0 8px;">New Retreat Booking Inquiry</h2>
+          <p style="color:#4b5563;margin:0 0 20px;">A guest submitted a retreat reservation request on ${BRAND_NAME}.</p>
+          ${tableHtml}
+        </div>
+      `,
+        };
+    },
 };
 
 const sendConfirmationEmail = async (data) => {
@@ -267,10 +328,31 @@ const sendAdminNotification = async (data) => {
     }
 };
 
+const sendRetreatAdminNotification = async (data) => {
+    try {
+        const template = emailTemplates.retreatAdminNotification(data);
+
+        const mailOptions = {
+            from: getFromAddress(),
+            to: config.admin_email || config.smtp_user,
+            subject: template.subject,
+            html: template.html,
+        };
+
+        const result = await transporter.sendMail(mailOptions);
+        logger.info('Retreat admin notification sent successfully');
+        return result;
+    } catch (error) {
+        logger.error('Error sending retreat admin notification:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     transporter,
     sendConfirmationEmail,
     sendAdminNotification,
+    sendRetreatAdminNotification,
     sendNewsletterCampaign,
     buildNewsletterHtml,
 };

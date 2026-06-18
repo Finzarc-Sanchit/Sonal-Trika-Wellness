@@ -19,12 +19,13 @@ const handleValidationError = (res, error) => {
 const createContact = async (req, res) => {
     try {
         // Aligned perfectly with our updated mongoose schema properties
-        const { name, phone, email, message } = req.body;
+        const { name, phone, email, service, message } = req.body;
 
         const contact = new Contact({
             name,
             phone,
             email,
+            service,
             message,
         });
 

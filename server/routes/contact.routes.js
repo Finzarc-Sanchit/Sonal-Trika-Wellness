@@ -8,14 +8,13 @@ const {
     getContactStats,
 } = require('../controllers/contactController');
 const { authenticate } = require('../middlewares/authMiddleware');
-const { validateContact } = require('../middlewares/contactValidation.middleware');
-const { sanitizeContact } = require('../middlewares/contactSanitize.middleware');
+const { validate, schemas } = require('../middlewares/validate');
 const { rateLimit } = require('../middlewares/rateLimitMiddleware');
 
 const router = express.Router();
 
 // POST /api/v1/contacts - Create new contact (public)
-router.post('/', rateLimit, sanitizeContact, validateContact, createContact);
+router.post('/', rateLimit, validate(schemas.contact), createContact);
 
 // GET /api/v1/contacts - List contacts (admin)
 router.get('/', authenticate, getContacts);

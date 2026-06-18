@@ -12,10 +12,11 @@ import ConnectPanel from '../components/ConnectPanel';
 import ServicesHero from '../components/sections/ServicesHero';
 import ServicesSection from '../components/sections/ServicesSection';
 import ServiceDetailModal from '../components/ui/ServiceDetailModal';
+import ServiceInquiryModal from '../components/ui/ServiceInquiryModal';
 import {
-  handleServicePrimaryCta,
   handleServiceSecondaryCta,
 } from '../utils/serviceCta';
+import { toContactServiceSlug } from '../data/contactServices';
 import { NAV_LINKS } from '../data/navigation';
 import type { ServiceCard } from '../data/servicesData';
 
@@ -29,6 +30,8 @@ export default function ServicesPage() {
   const { hash } = useLocation();
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [detailService, setDetailService] = useState<ServiceCard | null>(null);
+  const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+  const [selectedServiceSlug, setSelectedServiceSlug] = useState('');
 
   useEffect(() => {
     if (!hash) {
@@ -44,9 +47,32 @@ export default function ServicesPage() {
     }, 4500);
   };
 
+  const openInquiryForService = useCallback((item: ServiceCard) => {
+    const slug = toContactServiceSlug(item.id);
+    if (!slug) return;
+    setSelectedServiceSlug(slug);
+    setIsInquiryOpen(true);
+  }, []);
+
+  const closeInquiry = useCallback(() => {
+    setIsInquiryOpen(false);
+    setSelectedServiceSlug('');
+  }, []);
+
   const handleLearnMore = useCallback((item: ServiceCard) => {
     setDetailService(item);
   }, []);
+
+  const handlePrimaryCta = useCallback(
+    (item: ServiceCard) => {
+      if (item.primaryHref) {
+        window.location.href = item.primaryHref;
+        return;
+      }
+      openInquiryForService(item);
+    },
+    [openInquiryForService],
+  );
 
   const handleSecondaryCta = useCallback(
     (item: ServiceCard) => handleServiceSecondaryCta(item, handleLearnMore),
@@ -73,7 +99,7 @@ export default function ServicesPage() {
 
       <div className="relative rounded-t-[32px] bg-white z-20 overflow-hidden shadow-[0_-8px_40px_rgba(0,0,0,0.08)] -mt-8">
         <ServicesSection
-          onPrimaryCta={handleServicePrimaryCta}
+          onPrimaryCta={handlePrimaryCta}
           onSecondaryCta={handleSecondaryCta}
           onLearnMore={handleLearnMore}
         />
@@ -83,6 +109,22 @@ export default function ServicesPage() {
       <ServiceDetailModal
         service={detailService}
         onClose={() => setDetailService(null)}
+        onEnquire={(item) => {
+          setDetailService(null);
+          openInquiryForService(item);
+        }}
+      />
+
+      <ServiceInquiryModal
+        isOpen={isInquiryOpen}
+        serviceSlug={selectedServiceSlug}
+        onClose={closeInquiry}
+        onSubmit={(data) =>
+          triggerToast(
+            'Message Received',
+            `Thank you ${data.name.split(' ')[0]} — we'll reach out to ${data.email} soon.`,
+          )
+        }
       />
 
       <ConnectPanel

@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, ArrowUpRight, ChevronDown } from 'lucide-react';
 import { MenuLink, MenuLinkChild } from '../types';
 import TrikaLogo from './ui/TrikaLogo';
+import ContactBookingModal from './contact/ContactBookingModal';
 import { onScrollThreshold } from '../utils/performance';
 import { parseInternalUrl, scrollToHashTarget } from '../utils/scrollToHash';
 
@@ -187,13 +188,13 @@ const SERVICE_GROUP_LABELS = new Set(['Individual Services', 'Group', 'Teaching'
 export default function NavigationBar({
   links,
   ctaText,
-  onCtaClick,
   onLogoClick,
   variant = 'overlay',
   floating = false,
   homeUrl = '/',
 }: NavigationBarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [expandedMobile, setExpandedMobile] = useState<string | null>(null);
 
@@ -217,7 +218,13 @@ export default function NavigationBar({
   const mobileChildClass =
     'block py-2 pl-4 font-sans text-sm text-[#F8F5F0]/60 hover:text-[#F2B5A0] transition-colors';
 
+  const handleBookSession = () => {
+    setIsOpen(false);
+    setBookingOpen(true);
+  };
+
   return (
+    <>
     <motion.header
       id="navigation-header"
       animate={{
@@ -256,7 +263,7 @@ export default function NavigationBar({
         <div id="nav-cta-area" className="hidden md:block">
           <motion.button
             id="nav-cta-btn"
-            onClick={onCtaClick}
+            onClick={handleBookSession}
             whileHover={{ scale: 1.04, y: -2 }}
             whileTap={{ scale: 0.97 }}
             className="group relative overflow-hidden px-5 py-2.5 rounded-full text-xs font-sans font-semibold uppercase tracking-wider text-white flex items-center gap-1.5 cursor-pointer shadow-[0_4px_16px_rgba(165,90,66,0.25)]"
@@ -374,7 +381,7 @@ export default function NavigationBar({
               id="mobile-nav-cta-btn"
               onClick={() => {
                 setIsOpen(false);
-                onCtaClick?.();
+                handleBookSession();
               }}
               className="w-full py-3 rounded-full text-center text-sm font-sans font-semibold uppercase tracking-wider text-white bg-[#A55A42] hover:bg-[#8C82B6] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
@@ -385,5 +392,8 @@ export default function NavigationBar({
         )}
       </AnimatePresence>
     </motion.header>
+
+    <ContactBookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
+    </>
   );
 }

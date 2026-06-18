@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 /**
  * Schema for Retreat Bookings / Inquiries (e.g., Wellness, Yoga, and Meditation retreats)
- * Fields: name, phone, email, location, message, status
+ * Fields: name, phone, email, location, details, status
  */
 const retreatSchema = new mongoose.Schema(
     {
@@ -30,13 +30,16 @@ const retreatSchema = new mongoose.Schema(
             type: String,
             required: [true, 'Retreat location/destination is required'],
             trim: true,
-            maxlength: [200, 'Location name cannot exceed 200 characters'], // e.g., "Bali, Indonesia" or "Rishikesh, India"
+            enum: {
+                values: ['rishikesh', 'jaisalmer', 'sri-lanka', 'gangtok'],
+                message: '{VALUE} is not a valid currently active retreat destination'
+            }
         },
-        message: {
+        details: {
             type: String,
             trim: true,
-            maxlength: [5000, 'Message cannot exceed 5000 characters'],
-            required: [true, 'Message or special requirements description is required'],
+            maxlength: [5000, 'Details cannot exceed 5000 characters'],
+            required: [true, 'Details or special requirements description is required'],
         },
         status: {
             type: String,
